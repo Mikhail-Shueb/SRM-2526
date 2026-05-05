@@ -11,6 +11,12 @@ function Robot = KukaLBR()
 %   Note: The parameters represent the Standard Denavit-Hartenberg (DH) 
 %   convention as expected by the Robotics Symbolic Matlab Toolbox.
 
+% Add the toolbox to the MATLAB path so DKin() and DHTransf() can be found.
+% This uses fileparts(__file__) to work on any computer, regardless of
+% where the project is saved.
+toolboxPath = fullfile(fileparts(fileparts(mfilename('fullpath'))), 'toolbox');
+addpath(toolboxPath);
+
 % Define symbolic variables for the 7 rotational joints
 syms q1 q2 q3 q4 q5 q6 q7 real
 
