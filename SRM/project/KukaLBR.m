@@ -22,6 +22,9 @@ syms q1 q2 q3 q4 q5 q6 q7 real
 
 % KUKA LBR MED kinematics dimensions (in meters)
 % These measurements correspond to the lengths of the robot links.
+% change origin to make frame 0 and 1 the same, and recalculating the
+% distances, update kinematics validation for steps 2 and 3 to take into
+% account the new parameters
 d1 = 0.340; % Base to Shoulder
 d3 = 0.400; % Shoulder to Elbow
 d5 = 0.400; % Elbow to Wrist
@@ -30,12 +33,12 @@ d7 = 0.126; % Wrist to Flange
 % Define the Standard DH Table
 % Each row corresponds to a joint from 1 to 7.
 % Columns: [d      v       a       alpha       offset]
-Robot = [  d1     q1      0       -pi/2         0;
-           0      q2      0        pi/2         0;
+Robot = [  0      q1      0        pi/2         0;
+           0      q2      0       -pi/2         0;
            d3     q3      0       -pi/2         0;
            0      q4      0        pi/2         0;
-           d5     q5      0       -pi/2         0;
-           0      q6      0        pi/2         0;
+           d5     q5      0        pi/2         0;
+           0      q6      0       -pi/2         0;
            d7     q7      0        0            0 ];
 
 end
