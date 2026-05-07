@@ -90,19 +90,20 @@ run('validate_direct_kinematics.m')
 The validation works by plugging in joint angles where we **already know** what the answer should be, and checking if the model agrees.
 
 ### Test 1 — All joints at 0° (Home position)
-- **Expected position:** `p = [0, 0, 1.266]` metres  
-- Why? The arm is fully stretched upward. The total height is just the sum of all d values:  
-  `d1 + d3 + d5 + d7 = 0.340 + 0.400 + 0.400 + 0.126 = 1.266 m` ✅
+- **Expected position:** `p = [0, 0, 0.926]` metres  
+- Why? The arm is fully stretched upward. Since we set the base frame to the shoulder (`d1=0`), the total height is just the sum of the remaining links:  
+  `d3 + d5 + d7 = 0.400 + 0.400 + 0.126 = 0.926 m` ✅
 - **Expected orientation:** Identity matrix (no rotation — the hand points straight up) ✅
 
 ### Test 2 — Joint 2 at 90°
-- Joint 2 tilts the entire upper arm **horizontal**.
+- Due to the twist (`alpha = pi/2`) on joint 1, the axis of joint 2 is aligned with the Y-axis. Rotating joint 2 bends the arm towards the negative X-axis.
 - The arm above joint 2 has length `d3 + d5 + d7 = 0.926 m`.
-- **Expected:** Hand moves 0.926 m outward horizontally, drops to height `d1 = 0.340 m` ✅
+- **Expected:** Hand moves out to `x = -0.926 m`, stays at height `z = 0 m` ✅
 
 ### Test 3 — Joint 2 at 90°, Joint 4 at −90° (L-shape)
-- The arm first goes horizontal (joint 2), then folds back up (joint 4).
-- **Expected:** Hand at `x = 0.400 m`, `z = d1 + d5 + d7 = 0.866 m` ✅
+- The arm first bends along the -X axis (joint 2), placing the elbow at `x = -0.400 m`.
+- Because the local frame's Z-axis is now pointing sideways, rotating joint 4 by -90° bends the lower arm *down* along the -Z axis.
+- **Expected:** Hand at `x = -0.400 m`, `z = -0.526 m` ✅
 
 ---
 
@@ -110,7 +111,7 @@ The validation works by plugging in joint angles where we **already know** what 
 
 | Problem | Likely cause |
 |---------|-------------|
-| Home position height ≠ 1.266 m | Wrong `d` values in `KukaLBR.m` |
+| Home position height ≠ 0.926 m | Wrong `d` values in `KukaLBR.m` |
 | Home R ≠ Identity matrix | Wrong `alpha` values in `KukaLBR.m` |
 | Test 2 end-effector didn't move outward | Wrong joint order or wrong signs on `alpha` |
 

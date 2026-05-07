@@ -54,7 +54,7 @@ p_wrist = p_desired  −  d7 × (z-axis of the desired orientation)
 
 ### Step A2 — How far is the shoulder from the wrist?
 
-The shoulder is fixed at height d1 = 0.340 m above the ground: `p_shoulder = [0, 0, 0.340]`.
+The shoulder is fixed at the base frame's origin (because `d1=0`): `p_shoulder = [0, 0, 0]`.
 
 ```
 v  = p_wrist − p_shoulder   (a 3D vector)
@@ -104,20 +104,20 @@ Where `t_ref` and `b_ref` are two perpendicular reference axes, and `α_shoulder
 
 ### Step A5 — Solve q1 and q2 (Shoulder Angles)
 
-The DH model tells us the direction from shoulder to elbow is:
+The new DH model (`alpha1=pi/2`, `alpha2=-pi/2`) tells us the direction from shoulder to elbow is:
 
 ```
-z2_direction = [ cos(q1)·sin(q2),  sin(q1)·sin(q2),  cos(q2) ]
+Z2_direction = [ -cos(q1)·sin(q2),  -sin(q1)·sin(q2),  cos(q2) ]
 ```
 
-We just found `p_elbow`, so we know this direction. We can invert it:
+We just found `p_elbow`, so we know this direction vector (`n_se`). We can invert it:
 
 ```
-q1 = atan2( v_se_y,  v_se_x )         ← horizontal angle (like a compass)
-q2 = atan2( sqrt(vx²+vy²),  v_se_z )  ← vertical tilt angle
+q2 = acos( n_se_z )                          ← vertical tilt angle
+q1 = atan2( -n_se_y,  -n_se_x )               ← horizontal angle (like a compass)
 ```
 
-> **Singularity!** When the elbow is directly above/below the shoulder (`vx = vy = 0`),  
+> **Singularity!** When the elbow is directly above/below the shoulder (`nx = ny = 0`),  
 > `atan2(0, 0)` is undefined. The Jacobian rank drops here too.
 
 ---
@@ -128,7 +128,7 @@ q2 = atan2( sqrt(vx²+vy²),  v_se_z )  ← vertical tilt angle
 We compute it by looking at the wrist centre direction **from the elbow's reference frame**:
 
 ```
-v_ew_in_frame2 = R12ᵀ × (p_wrist − p_elbow)
+v_ew_in_frame2 = R02ᵀ × (p_wrist − p_elbow)
 q3 = atan2( v_ew_y_local,  v_ew_x_local )
 ```
 
@@ -149,14 +149,14 @@ R_47 = R_04ᵀ × R_desired
 
 ---
 
-### Step B2 — Decompose R_47 into q5, q6, q7 (ZYZ Euler angles)
+### Step B2 — Decompose R_47 into q5, q6, q7 (Euler angles)
 
-The wrist acts like a ball-and-socket joint. Its three axes follow a **Z-Y-Z** rotation pattern:
+The wrist acts like a ball-and-socket joint. With the new D-H parameters (`alpha5=pi/2`, `alpha6=-pi/2`), its axes form a specific rotation sequence:
 
 ```
 q6 = atan2( sqrt(R47[1,3]² + R47[2,3]²),  R47[3,3] )
-q5 = atan2( R47[2,3],  R47[1,3] )
-q7 = atan2( R47[3,2], -R47[3,1] )
+q5 = atan2( -R47[2,3],  -R47[1,3] )
+q7 = atan2( -R47[3,2],   R47[3,1] )
 ```
 
 > **Singularity!** When `q6 = 0` or `q6 = π`, the wrist is in a singular configuration.  
