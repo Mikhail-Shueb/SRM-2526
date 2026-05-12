@@ -1,0 +1,6 @@
+**/slprj/
+**/*.slxc
+**/*.slx.autosave
+
+/SRM/jacobian_kuka.m
+/SRM/kuka_direct_kinematics.m
