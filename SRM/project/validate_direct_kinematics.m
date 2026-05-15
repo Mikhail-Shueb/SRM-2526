@@ -28,56 +28,29 @@ disp('Done.');
 syms q1 q2 q3 q4 q5 q6 q7 real
 
 %% ---- TEST 1: Home position (all joints = 0) ----
-% When all angles are zero, the robot is fully stretched upward.
-% The end-effector should be directly above the shoulder.
-% Since the shoulder is at z=0, the height is d3+d5+d7.
-% Expected p = [0; 0; d3+d5+d7] = [0; 0; 0.400+0.400+0.126]
-%                               = [0; 0; 0.926]  (in metres)
-disp(' ');
-disp('--- TEST 1: All joints at 0 degrees (Home / fully stretched) ---');
 q_test1 = [0, 0, 0, 0, 0, 0, 0];
 T1 = double(subs(T_sym, [q1,q2,q3,q4,q5,q6,q7], q_test1));
 p1 = T1(1:3, 4);
-R1 = T1(1:3, 1:3);
-disp('End-effector position p [m]:');
-disp(p1);
-disp('Expected: [0; 0; 0.926]');
-disp('Rotation matrix R:');
-disp(R1);
-disp('Expected: Identity matrix (no rotation at home)');
+p1_exp = [0; 0; 0.926];
+if norm(p1 - p1_exp) < 1e-4; res1 = 'Correct'; else; res1 = 'Wrong'; end
+disp(['1. Home position        -> ', res1]);
 
 %% ---- TEST 2: Joint 2 at 90 degrees (shoulder bend) ----
-% Joint 2 is the first "bending" joint.
-% Due to the new twist alpha=pi/2 on joint 1, a positive rotation 
-% on joint 2 bends the arm towards the negative X-axis.
-% The arm above joint 2 has total length d3+d5+d7 = 0.926 m.
-% Expected: p = [-0.926, 0, 0].
-disp(' ');
-disp('--- TEST 2: Joint 2 = 90 deg, rest = 0 ---');
 q_test2 = [0, pi/2, 0, 0, 0, 0, 0];
 T2 = double(subs(T_sym, [q1,q2,q3,q4,q5,q6,q7], q_test2));
 p2 = T2(1:3, 4);
-disp('End-effector position p [m]:');
-disp(p2);
-disp('Expected: [-0.926; 0; 0]');
+p2_exp = [-0.926; 0; 0];
+if norm(p2 - p2_exp) < 1e-4; res2 = 'Correct'; else; res2 = 'Wrong'; end
+disp(['2. Shoulder bend        -> ', res2]);
 
 %% ---- TEST 3: Joint 2 = 90 deg AND Joint 4 = -90 deg (L-shape) ----
-% This simulates a classic "L" shape. The upper arm (d3=0.4m) bends
-% along -X. Then joint 4 rotates the lower arm.
-% Because Z3 is along Y0, a rotation of -90 deg around Y0 rotates
-% the -X direction down to the -Z direction.
-% Expected: p = [-0.400, 0, -0.526].
-disp(' ');
-disp('--- TEST 3: Joint 2 = 90 deg, Joint 4 = -90 deg, rest = 0 ---');
 q_test3 = [0, pi/2, 0, -pi/2, 0, 0, 0];
 T3 = double(subs(T_sym, [q1,q2,q3,q4,q5,q6,q7], q_test3));
 p3 = T3(1:3, 4);
-disp('End-effector position p [m]:');
-disp(p3);
-disp('Expected: [-0.400; 0; -0.526]');
+p3_exp = [-0.400; 0; -0.526];
+if norm(p3 - p3_exp) < 1e-4; res3 = 'Correct'; else; res3 = 'Wrong'; end
+disp(['3. L-shape bend         -> ', res3]);
 
 %% ---- Summary ----
 disp(' ');
 disp('=== Validation complete! ===');
-disp('If the positions match your expectations, the D-H model is correct.');
-disp('You can add more test cases by copying a TEST block above.');
