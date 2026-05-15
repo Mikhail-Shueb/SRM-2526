@@ -28,6 +28,7 @@ Prints position/orientation errors and shows two convergence plots.
 
 ```matlab
 run('validate_clik.m')
+run('step5_clik_experiments.m')
 ```
 
 **Expected output:**
