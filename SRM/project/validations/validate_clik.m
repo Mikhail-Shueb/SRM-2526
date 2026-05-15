@@ -1,5 +1,5 @@
 % validate_clik.m
-% Step 5 validation script.
+% CLIK check against the analytical IK target.
 
 projectPath = fileparts(fileparts(mfilename('fullpath')));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
@@ -12,7 +12,7 @@ if exist('kuka_direct_kinematics', 'file') ~= 2 || exist('jacobian_kuka', 'file'
     error('Run generate_jacobian_library.m first to create kuka_direct_kinematics.m and jacobian_kuka.m.');
 end
 
-%% Target pose
+%% Target pose from FK
 q_goal_ref = [0.25; 0.70; -0.35; 1.05; 0.25; -0.55; 0.15];
 T_goal = kuka_direct_kinematics(q_goal_ref);
 R_d = T_goal(1:3, 1:3);
@@ -26,7 +26,7 @@ err_ik_o = norm(T_ik(1:3,1:3) - R_d, 'fro');
 if err_ik_p < 1 && err_ik_o < 0.01; res_ik = 'Correct'; else; res_ik = 'Wrong'; end
 disp(['Analytical IK pose check -> ', res_ik]);
 
-%% Closed-loop integration
+%% Closed-loop run
 dt = 0.002;
 t_end = 6.0;
 t = 0:dt:t_end;
@@ -38,7 +38,7 @@ Kp = 5.0 * eye(3);
 Ko = 4.0 * eye(3);
 Kn = 0.15 * eye(7);
 lambda = 1e-3;
-method = 1; % damped pseudoinverse
+method = 1;
 
 p_dot_d = zeros(3, 1);
 omega_d = zeros(3, 1);
@@ -66,7 +66,7 @@ disp(' ');
 if position_error_mm < 1.0 && orientation_error < 1e-2; res_clik = 'Correct'; else; res_clik = 'Wrong'; end
 disp(['CLIK final pose check    -> ', res_clik]);
 
-%% Plots
+%% Error plots
 figure('Name', 'KUKA LBR MED - CLIK Validation');
 subplot(2,1,1);
 plot(t, vecnorm(err_hist(1:3, :)) * 1000, 'LineWidth', 1.5);

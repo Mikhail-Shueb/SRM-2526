@@ -1,16 +1,5 @@
-% generate_kuka_visual.m
-% Generates a Simulink 3D visualisation of the KUKA LBR MED using the
-% RobotX_sim3d package provided by the professor.
-%
-% HOW TO RUN:
-%   1. Run generate_jacobian_library.m first (if you haven't already).
-%   2. Run this script.
-%   3. Open Kuka_CLIK_Model.slx and Kuka_Visual.slx side by side.
-%   4. Run the simulation - the 3D viewer will update in real time!
+% Build the Simulink 3D visual library for the KUKA model
 
-% -----------------------------------------------------------------------
-% 1. Setup paths
-% -----------------------------------------------------------------------
 projectPath  = fileparts(fileparts(mfilename('fullpath')));
 sim3dPath    = fullfile(fileparts(projectPath), 'RobotX_sim3d');
 toolboxPath  = fullfile(fileparts(projectPath), 'toolbox');
@@ -26,15 +15,10 @@ end
 
 disp('=== KUKA LBR MED - Generating 3D Visualisation ===');
 
-% -----------------------------------------------------------------------
-% 2. Build a *numeric template* DH table for buildDHActors.
-%    buildDHActors needs a table where each joint's symbolic variable
-%    is replaced by a fresh syms variable q1..q7 (one per row).
-%    The function will create an Input port in the subsystem for each one.
-% -----------------------------------------------------------------------
+% buildDHActors creates one input port per symbolic joint variable.
 syms q1 q2 q3 q4 q5 q6 q7 real
 
-% KUKA LBR MED DH table  [d      theta   a      alpha     offset]
+% DH table
 DH = [ 0      q1      0      pi/2      0;
        0      q2      0     -pi/2      0;
        0.400  q3      0     -pi/2      0;
@@ -43,9 +27,6 @@ DH = [ 0      q1      0      pi/2      0;
        0      q6      0     -pi/2      0;
        0.126  q7      0      0         0 ];
 
-% -----------------------------------------------------------------------
-% 3. Create (or recreate) the Kuka_Visual library
-% -----------------------------------------------------------------------
 modelName = 'Kuka_Visual';
 
 if bdIsLoaded(modelName)
@@ -60,19 +41,11 @@ end
 new_system(modelName, 'Library');
 open_system(modelName);
 
-% -----------------------------------------------------------------------
-% 4. Call buildDHActors - this creates the 'Visual' subsystem with
-%    7 input ports (q1..q7) and one 3D actor per DH frame.
-%    It requires the frame_axes.wrl file which is in the sim3d folder.
-% -----------------------------------------------------------------------
 frameWrl = fullfile(sim3dPath, 'frame_axes.wrl');
 disp('Building 3D actor blocks for each DH frame...');
 
 buildDHActors(DH, modelName, frameWrl);
 
-% -----------------------------------------------------------------------
-% 5. Save the library
-% -----------------------------------------------------------------------
 save_system(modelName, slxFile);
 close_system(modelName);
 

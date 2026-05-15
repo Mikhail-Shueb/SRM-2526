@@ -1,5 +1,5 @@
 function Robot = KukaLBR()
-%KUKALBR Returns the D-H table of parameters for the KUKA LBR MED 7 R800
+% Initial setup for the project, as mentioned in the report the model choosed of the KUKA was the KUKA LBR MED 7 R800
 %   Robot = [d v a alpha offset];
 %
 %   d: link offset along previous z to the common normal
@@ -7,32 +7,20 @@ function Robot = KukaLBR()
 %   a: link length along common normal
 %   alpha: link twist angle around common normal
 %   offset: coordinate offset for home position
-%
-%   Note: The parameters represent the Standard Denavit-Hartenberg (DH) 
-%   convention as expected by the Robotics Symbolic Matlab Toolbox.
 
-% Add the toolbox to the MATLAB path so DKin() and DHTransf() can be found.
-% This uses fileparts(__file__) to work on any computer, regardless of
-% where the project is saved.
 projectPath = fileparts(fileparts(mfilename('fullpath')));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
 addpath(toolboxPath);
 
-% Define symbolic variables for the 7 rotational joints
+% 7 rotational joints
 syms q1 q2 q3 q4 q5 q6 q7 real
 
-% KUKA LBR MED kinematics dimensions (in meters)
-% These measurements correspond to the lengths of the robot links.
-% change origin to make frame 0 and 1 the same, and recalculating the
-% distances, update kinematics validation for steps 2 and 3 to take into
-% account the new parameters
+% KUKA LBR MED kinematics dimensions, in meters, that represent the links. These values were obtained from the datasheet of the robot
 d1 = 0.340; % Base to Shoulder
 d3 = 0.400; % Shoulder to Elbow
 d5 = 0.400; % Elbow to Wrist
 d7 = 0.126; % Wrist to Flange
 
-% Define the Standard DH Table
-% Each row corresponds to a joint from 1 to 7.
 % Columns: [d      v       a       alpha       offset]
 Robot = [  0      q1      0        pi/2         0;
            0      q2      0       -pi/2         0;

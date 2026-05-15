@@ -1,4 +1,3 @@
-% startup.m
 % Adds the organized KUKA LBR MED project folders to the MATLAB path.
 
 projectPath = fileparts(mfilename('fullpath'));

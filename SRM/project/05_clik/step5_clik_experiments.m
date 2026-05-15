@@ -1,4 +1,4 @@
-% Generation of some experiments to evalute CLIK under different conditions.
+% Generation of some experiments to evalute CLIK under different conditions
 
 clear; clc;
 

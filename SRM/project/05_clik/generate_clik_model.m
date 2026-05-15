@@ -1,15 +1,8 @@
-% Simulink model for CLIK used in step 5
-%
-% Controller:
-%   e_p = p_d - p(q)
-%   R_err = R_d*R(q)'
-%   e_o = theta*r
-%   q_dot = J#*([p_dot_d; omega_d] + [Kp*e_p; Ko*e_o])
-%           + (I - J#*J)*q_dot_0
-%   q_dot_0 = -Kn*(q - q_rest)
-%
-% clik_method = 1 uses the damped pseudoinverse.
-% clik_method = 2 uses the transposed Jacobian.
+% Builds the Simulink model used for the CLIK tests.
+
+% Method 1: damped pseudoinverse
+% Method 2: Jacobian transpose
+
 
 projectPath = fileparts(fileparts(mfilename('fullpath')));
 simulinkPath = fullfile(projectPath, 'simulink');
@@ -37,11 +30,13 @@ assignin('base', 'Kn_clik', 0.15 * eye(7));
 assignin('base', 'lambda_clik', 1e-3);
 assignin('base', 'clik_method', 1);
 
+% Use a pose generated from FK so the target is reachable.
 q_goal_ref = [0.25; 0.70; -0.35; 1.05; 0.25; -0.55; 0.15];
 T_goal = kuka_direct_kinematics(q_goal_ref);
 assignin('base', 'p_d', T_goal(1:3, 4));
 assignin('base', 'R_d', T_goal(1:3, 1:3));
 
+% Keep the saved model self-contained when opened later.
 modelInit = sprintf([ ...
     'modelPath = fileparts(get_param(bdroot, ''FileName''));\n' ...
     'projectPath = fileparts(modelPath);\n' ...
@@ -72,6 +67,7 @@ new_system(modelName);
 open_system(modelName);
 set_param(modelName, 'InitFcn', modelInit);
 
+% Inputs and gains.
 add_block('simulink/Sources/Constant', [modelName '/p_d'], ...
           'Value', 'p_d', 'Position', [30 40 100 70]);
 add_block('simulink/Sources/Constant', [modelName '/R_d'], ...
@@ -93,6 +89,7 @@ add_block('simulink/Sources/Constant', [modelName '/method'], ...
 add_block('simulink/Sources/Constant', [modelName '/lambda'], ...
           'Value', 'lambda_clik', 'Position', [30 535 100 565]);
 
+% Controller loop and outputs.
 add_block('simulink/Continuous/Integrator', [modelName '/Integrator q'], ...
           'InitialCondition', 'q_initial', 'Position', [520 250 560 290]);
 add_block('simulink/User-Defined Functions/MATLAB Function', [modelName '/CLIK Controller'], ...
@@ -116,6 +113,7 @@ chart.Script = sprintf([ ...
     '[q_dot, x_err] = clik_controller(q, p_d, R_d, p_dot_d, omega_d, Kp, Ko, q_rest, Kn, method, lambda);\n' ...
     'end\n']);
 
+% Wire the loop.
 add_line(modelName, 'Integrator q/1', 'CLIK Controller/1');
 add_line(modelName, 'p_d/1', 'CLIK Controller/2');
 add_line(modelName, 'R_d/1', 'CLIK Controller/3');
