@@ -21,9 +21,10 @@ p_d = T_goal(1:3, 4);
 q_ik = inverse_kinematics(R_d, p_d, 0);
 T_ik = kuka_direct_kinematics(q_ik);
 
-disp('Analytical IK pose check:');
-disp(['  position error [mm] = ', num2str(norm(T_ik(1:3,4) - p_d) * 1000)]);
-disp(['  orientation error    = ', num2str(norm(T_ik(1:3,1:3) - R_d, 'fro'))]);
+err_ik_p = norm(T_ik(1:3,4) - p_d) * 1000;
+err_ik_o = norm(T_ik(1:3,1:3) - R_d, 'fro');
+if err_ik_p < 1 && err_ik_o < 0.01; res_ik = 'Correct'; else; res_ik = 'Wrong'; end
+disp(['Analytical IK pose check -> ', res_ik]);
 
 %% Closed-loop integration
 dt = 0.002;
@@ -62,17 +63,8 @@ orientation_error = norm(R_final - R_d, 'fro');
 final_task_error = norm(err_hist(:, end));
 
 disp(' ');
-disp('CLIK final pose check:');
-disp(['  position error [mm] = ', num2str(position_error_mm)]);
-disp(['  orientation error    = ', num2str(orientation_error)]);
-disp(['  task error norm      = ', num2str(final_task_error)]);
-disp(['  final q [rad]        = ', mat2str(q', 4)]);
-
-if position_error_mm < 1.0 && orientation_error < 1e-2
-    disp('SUCCESS: CLIK converged to the desired pose.');
-else
-    disp('WARNING: CLIK did not meet the default tolerance. Tune Kp, Ko, Kn, lambda, or t_end.');
-end
+if position_error_mm < 1.0 && orientation_error < 1e-2; res_clik = 'Correct'; else; res_clik = 'Wrong'; end
+disp(['CLIK final pose check    -> ', res_clik]);
 
 %% Plots
 figure('Name', 'KUKA LBR MED - CLIK Validation');
