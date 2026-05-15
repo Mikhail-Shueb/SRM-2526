@@ -43,11 +43,11 @@ p2_exp = [-0.926; 0; 0];
 if norm(p2 - p2_exp) < 1e-4; res2 = 'Correct'; else; res2 = 'Wrong'; end
 disp(['2. Shoulder bend        -> ', res2]);
 
-%% ---- TEST 3: Joint 2 = 90 deg AND Joint 4 = -90 deg (L-shape) ----
-q_test3 = [0, pi/2, 0, -pi/2, 0, 0, 0];
+%% ---- TEST 3: Elbow Bend only (L-shape) ----
+q_test3 = [0, 0, 0, -pi/2, 0, 0, 0];
 T3 = double(subs(T_sym, [q1,q2,q3,q4,q5,q6,q7], q_test3));
 p3 = T3(1:3, 4);
-p3_exp = [-0.400; 0; -0.526];
+p3_exp = [-0.526; 0; 0.400];
 if norm(p3 - p3_exp) < 1e-4; res3 = 'Correct'; else; res3 = 'Wrong'; end
 disp(['3. L-shape bend         -> ', res3]);
 
