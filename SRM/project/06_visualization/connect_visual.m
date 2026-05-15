@@ -2,8 +2,9 @@
 % Inserts the Visual subsystem from Kuka_Visual.slx into Kuka_CLIK_Model.slx
 % and wires it automatically. No manual dragging needed!
 
-projectPath = fileparts(mfilename('fullpath'));
-addpath(projectPath);
+projectPath = fileparts(fileparts(mfilename('fullpath')));
+simulinkPath = fullfile(projectPath, 'simulink');
+addpath(genpath(projectPath));
 
 modelName  = 'Kuka_CLIK_Model';
 visualLib  = 'Kuka_Visual';
@@ -14,10 +15,10 @@ disp(['=== Connecting Visual subsystem in ', modelName, ' ===']);
 % 1. Load both models
 % -----------------------------------------------------------------------
 if ~bdIsLoaded(modelName)
-    load_system(fullfile(projectPath, [modelName '.slx']));
+    load_system(fullfile(simulinkPath, [modelName '.slx']));
 end
 if ~bdIsLoaded(visualLib)
-    load_system(fullfile(projectPath, [visualLib '.slx']));
+    load_system(fullfile(simulinkPath, [visualLib '.slx']));
 end
 
 set_param(modelName, 'Lock', 'off');
@@ -67,62 +68,8 @@ end
 % -----------------------------------------------------------------------
 % 6. Save
 % -----------------------------------------------------------------------
-save_system(modelName, fullfile(projectPath, [modelName '.slx']));
+save_system(modelName, fullfile(simulinkPath, [modelName '.slx']));
 close_system(visualLib, 0);
 
 disp('=== Done! ===');
 disp('Open Kuka_CLIK_Model.slx and press Run to start the 3D simulation!');
-
-
-projectPath = fileparts(mfilename('fullpath'));
-addpath(projectPath);
-
-modelName = 'Kuka_CLIK_Model';
-disp(['=== Connecting Visual subsystem in ', modelName, ' ===']);
-
-% Load the model
-if ~bdIsLoaded(modelName)
-    load_system(fullfile(projectPath, [modelName '.slx']));
-end
-set_param(modelName, 'Lock', 'off');
-
-% -----------------------------------------------------------------------
-% 1. Add Demux block (splits 7x1 vector into 7 scalar signals)
-% -----------------------------------------------------------------------
-demuxBlk = [modelName '/Demux_q'];
-
-% Remove old demux if it exists (clean re-run)
-try, delete_block(demuxBlk); catch, end
-
-add_block('simulink/Signal Routing/Demux', demuxBlk, ...
-    'Outputs', '7', ...
-    'Position', [620 228 625 312]);
-
-% -----------------------------------------------------------------------
-% 2. Connect: Integrator q --> Demux
-% -----------------------------------------------------------------------
-integratorBlk = [modelName '/Integrator q'];
-
-% Get port handles
-ph_int  = get_param(integratorBlk, 'PortHandles');
-ph_demux = get_param(demuxBlk, 'PortHandles');
-
-% Wire integrator output to demux input
-Simulink.connectBlocks(ph_int.Outport(1), ph_demux.Inport(1));
-
-% -----------------------------------------------------------------------
-% 3. Connect: Demux outputs --> Visual/q1 .. q7
-% -----------------------------------------------------------------------
-visualBlk = [modelName '/Visual'];
-ph_visual = get_param(visualBlk, 'PortHandles');
-
-for i = 1:7
-    Simulink.connectBlocks(ph_demux.Outport(i), ph_visual.Inport(i));
-end
-
-% -----------------------------------------------------------------------
-% 4. Save
-% -----------------------------------------------------------------------
-save_system(modelName, fullfile(projectPath, [modelName '.slx']));
-disp('=== Done! ===');
-disp('Open Kuka_CLIK_Model.slx and press Run to start the 3D simulation.');

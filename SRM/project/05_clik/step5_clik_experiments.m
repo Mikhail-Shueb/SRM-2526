@@ -2,13 +2,14 @@
 
 clear; clc;
 
-projectPath = fileparts(mfilename('fullpath'));
+scriptPath = fileparts(mfilename('fullpath'));
+projectPath = fileparts(scriptPath);
 figPath = fullfile(projectPath, 'figures');
 if ~exist(figPath, 'dir')
     mkdir(figPath);
 end
 
-addpath(projectPath);
+addpath(genpath(projectPath));
 addpath(fullfile(fileparts(projectPath), 'toolbox'));
 
 disp('STEP 5 CLIK EXPERIMENTS');
@@ -99,7 +100,7 @@ metrics = table( ...
     'max_joint_speed_rad_s','max_abs_joint_rad', ...
     'null_distance_final_rad'});
 
-writetable(metrics, fullfile(projectPath, 'step5_clik_experiment_metrics.csv'));
+writetable(metrics, fullfile(scriptPath, 'step5_clik_experiment_metrics.csv'));
 
 %% Graph 1: proportional gain comparison
 figure('Name', 'Gain comparison', 'Visible', 'off');

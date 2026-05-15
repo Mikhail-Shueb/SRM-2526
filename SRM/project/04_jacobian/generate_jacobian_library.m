@@ -2,8 +2,20 @@
 % Computes the Symbolic Geometric Jacobian for the KUKA LBR MED
 % and automatically adds it to the Kuka_Lib Simulink library.
 
-% 1. Add toolbox to path
-addpath(fullfile(fileparts(mfilename('fullpath')), '..', 'toolbox'));
+% 1. Add organized project folders and toolbox to path
+projectPath = fileparts(fileparts(mfilename('fullpath')));
+toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
+generatedPath = fullfile(projectPath, 'generated');
+simulinkPath = fullfile(projectPath, 'simulink');
+addpath(genpath(projectPath));
+addpath(toolboxPath);
+
+if ~exist(generatedPath, 'dir')
+    mkdir(generatedPath);
+end
+if ~exist(simulinkPath, 'dir')
+    mkdir(simulinkPath);
+end
 
 disp('=== KUKA LBR MED - Generating Geometric Jacobian ===');
 
@@ -75,8 +87,9 @@ disp('Saving to Simulink Library (Kuka_Lib)...');
 
 % 5. Generate Simulink Block
 % Ensure the library exists and is open
-if exist('Kuka_Lib', 'file') == 4 % 4 means Simulink model
-    load_system('Kuka_Lib');
+libraryFile = fullfile(simulinkPath, 'Kuka_Lib.slx');
+if exist(libraryFile, 'file') == 4 % 4 means Simulink model
+    load_system(libraryFile);
     set_param('Kuka_Lib', 'Lock', 'off'); % Unlock the library so we can edit it
 else
     new_system('Kuka_Lib', 'Library');
@@ -96,13 +109,13 @@ matlabFunctionBlock('Kuka_Lib/Jacobian', J_sym, ...
                     'FunctionName', 'jacobian_kuka');
 
 % Also generate a standalone .m file so validate_jacobian.m can call it
-matlabFunction(J_sym, 'File', 'jacobian_kuka.m', 'Vars', {q_sym});
+matlabFunction(J_sym, 'File', fullfile(generatedPath, 'jacobian_kuka.m'), 'Vars', {q_sym});
 
 % Generate the Direct Kinematics .m file for the validation script to use!
-matlabFunction(T_all{7}, 'File', 'kuka_direct_kinematics.m', 'Vars', {q_sym});
+matlabFunction(T_all{7}, 'File', fullfile(generatedPath, 'kuka_direct_kinematics.m'), 'Vars', {q_sym});
 
 % Save and close
-save_system('Kuka_Lib');
+save_system('Kuka_Lib', libraryFile);
 close_system('Kuka_Lib');
 
 disp('=== Done! ===');

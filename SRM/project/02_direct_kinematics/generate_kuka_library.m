@@ -15,11 +15,16 @@
 %      for 7 joints. Be patient!
 
 %% ---- Step 0: Setup ----
-% Make sure both 'project' and 'toolbox' folders are on the path
-projectPath = fileparts(mfilename('fullpath'));
+% Make sure the organized project folders and toolbox are on the path.
+projectPath = fileparts(fileparts(mfilename('fullpath')));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
-addpath(projectPath);
+simulinkPath = fullfile(projectPath, 'simulink');
+addpath(genpath(projectPath));
 addpath(toolboxPath);
+
+if ~exist(simulinkPath, 'dir')
+    mkdir(simulinkPath);
+end
 
 disp('=== KUKA LBR MED - Direct Kinematics Library Generator ===');
 disp('Step 1: Loading D-H parameters from KukaLBR()...');
@@ -61,8 +66,9 @@ disp('Step 4: Creating Simulink Library ''Kuka_Lib''...');
 if bdIsLoaded('Kuka_Lib')
     close_system('Kuka_Lib', 0);
 end
-if exist('Kuka_Lib.slx', 'file')
-    delete('Kuka_Lib.slx');
+libraryFile = fullfile(simulinkPath, 'Kuka_Lib.slx');
+if exist(libraryFile, 'file')
+    delete(libraryFile);
 end
 
 new_system('Kuka_Lib', 'Library');
@@ -76,11 +82,11 @@ matlabFunctionBlock('Kuka_Lib/Direct_Kinematics', Kuka_R, Kuka_p, ...
     'FunctionName', 'direct_kinematics_kuka');
 
 %% ---- Step 5: Save the library ----
-save_system('Kuka_Lib', fullfile(projectPath, 'Kuka_Lib.slx'));
+save_system('Kuka_Lib', libraryFile);
 close_system('Kuka_Lib');
 
 disp(' ');
-disp('=== Library saved as Kuka_Lib.slx in the project folder! ===');
+disp(['=== Library saved as ', libraryFile, ' ===']);
 disp('You can now open it with: open_system(''Kuka_Lib'')');
 disp(' ');
 disp('Next step: run validate_direct_kinematics.m to test the model.');

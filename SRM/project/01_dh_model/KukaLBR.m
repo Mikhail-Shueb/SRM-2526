@@ -14,7 +14,8 @@ function Robot = KukaLBR()
 % Add the toolbox to the MATLAB path so DKin() and DHTransf() can be found.
 % This uses fileparts(__file__) to work on any computer, regardless of
 % where the project is saved.
-toolboxPath = fullfile(fileparts(fileparts(mfilename('fullpath'))), 'toolbox');
+projectPath = fileparts(fileparts(mfilename('fullpath')));
+toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
 addpath(toolboxPath);
 
 % Define symbolic variables for the 7 rotational joints

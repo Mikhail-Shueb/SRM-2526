@@ -1,9 +1,9 @@
 % validate_clik.m
 % Step 5 validation script.
 
-projectPath = fileparts(mfilename('fullpath'));
+projectPath = fileparts(fileparts(mfilename('fullpath')));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
-addpath(projectPath);
+addpath(genpath(projectPath));
 addpath(toolboxPath);
 
 disp('=== KUKA LBR MED - Closed Loop Inverse Kinematics Validation ===');

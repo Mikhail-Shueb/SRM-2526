@@ -4,9 +4,10 @@
 %  Run generate_kuka_library.m FIRST to build the symbolic DK model.
 %  Then run this script to check that IK + DK round-trip is correct.
 
-projectPath = fileparts(mfilename('fullpath'));
+projectPath = fileparts(fileparts(mfilename('fullpath')));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
-addpath(projectPath); addpath(toolboxPath);
+addpath(genpath(projectPath));
+addpath(toolboxPath);
 
 disp('=== KUKA LBR MED — Inverse Kinematics Validation ===');
 disp('Computing symbolic DK (may take a few minutes)...');

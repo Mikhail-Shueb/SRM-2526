@@ -10,9 +10,10 @@
 %   Option B - Animate a custom trajectory:
 %       Set  q_traj  (7xN matrix) and  dt  below, then run.
 
-projectPath = fileparts(mfilename('fullpath'));
+projectPath = fileparts(fileparts(mfilename('fullpath')));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
-addpath(projectPath); addpath(toolboxPath);
+addpath(genpath(projectPath));
+addpath(toolboxPath);
 
 if exist('kuka_direct_kinematics','file') ~= 2
     error('Run generate_jacobian_library.m first.');
@@ -206,4 +207,3 @@ for k = 1:N
     tic;
 end
 disp('Animation complete!');
-

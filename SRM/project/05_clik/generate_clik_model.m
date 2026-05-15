@@ -11,10 +11,16 @@
 % clik_method = 1 uses the damped pseudoinverse.
 % clik_method = 2 uses the transposed Jacobian.
 
-projectPath = fileparts(mfilename('fullpath'));
-addpath(projectPath);
+projectPath = fileparts(fileparts(mfilename('fullpath')));
+simulinkPath = fullfile(projectPath, 'simulink');
+addpath(genpath(projectPath));
+
+if ~exist(simulinkPath, 'dir')
+    mkdir(simulinkPath);
+end
 
 modelName = 'Kuka_CLIK_Model';
+modelFile = fullfile(simulinkPath, [modelName '.slx']);
 disp('=== KUKA LBR MED - Generating CLIK Simulink Model ===');
 
 if exist('kuka_direct_kinematics', 'file') ~= 2 || exist('jacobian_kuka', 'file') ~= 2
@@ -38,7 +44,8 @@ assignin('base', 'R_d', T_goal(1:3, 1:3));
 
 modelInit = sprintf([ ...
     'modelPath = fileparts(get_param(bdroot, ''FileName''));\n' ...
-    'addpath(modelPath);\n' ...
+    'projectPath = fileparts(modelPath);\n' ...
+    'addpath(genpath(projectPath));\n' ...
     'q_initial = %s;\n' ...
     'q_rest = zeros(7, 1);\n' ...
     'p_d = %s;\n' ...
@@ -57,8 +64,8 @@ modelInit = sprintf([ ...
 if bdIsLoaded(modelName)
     close_system(modelName, 0);
 end
-if exist([modelName '.slx'], 'file')
-    delete([modelName '.slx']);
+if exist(modelFile, 'file')
+    delete(modelFile);
 end
 
 new_system(modelName);
@@ -129,8 +136,8 @@ add_line(modelName, 'CLIK Controller/2', 'x_err_out/1');
 set_param(modelName, 'StopTime', '6');
 set_param(modelName, 'Solver', 'ode4', 'FixedStep', '0.002');
 
-save_system(modelName, fullfile(projectPath, [modelName '.slx']));
+save_system(modelName, modelFile);
 close_system(modelName);
 
-disp(['Saved ', modelName, '.slx']);
+disp(['Saved ', modelFile]);
 disp('Run sim(''Kuka_CLIK_Model'') to validate the closed-loop behavior.');

@@ -11,13 +11,18 @@
 % -----------------------------------------------------------------------
 % 1. Setup paths
 % -----------------------------------------------------------------------
-projectPath  = fileparts(mfilename('fullpath'));
+projectPath  = fileparts(fileparts(mfilename('fullpath')));
 sim3dPath    = fullfile(fileparts(projectPath), 'RobotX_sim3d');
 toolboxPath  = fullfile(fileparts(projectPath), 'toolbox');
+simulinkPath = fullfile(projectPath, 'simulink');
 
-addpath(projectPath);
+addpath(genpath(projectPath));
 addpath(sim3dPath);
 addpath(toolboxPath);
+
+if ~exist(simulinkPath, 'dir')
+    mkdir(simulinkPath);
+end
 
 disp('=== KUKA LBR MED - Generating 3D Visualisation ===');
 
@@ -47,7 +52,7 @@ if bdIsLoaded(modelName)
     close_system(modelName, 0);
 end
 
-slxFile = fullfile(projectPath, [modelName '.slx']);
+slxFile = fullfile(simulinkPath, [modelName '.slx']);
 if exist(slxFile, 'file')
     delete(slxFile);
 end
@@ -71,7 +76,7 @@ buildDHActors(DH, modelName, frameWrl);
 save_system(modelName, slxFile);
 close_system(modelName);
 
-disp(['=== Done! Saved as ', modelName, '.slx ===']);
+disp(['=== Done! Saved as ', slxFile, ' ===']);
 disp(' ');
 disp('NEXT STEPS:');
 disp('  1. Open Kuka_CLIK_Model.slx');

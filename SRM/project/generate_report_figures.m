@@ -4,7 +4,8 @@
 
 projectPath = fileparts(mfilename('fullpath'));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
-addpath(projectPath); addpath(toolboxPath);
+addpath(genpath(projectPath));
+addpath(toolboxPath);
 
 % Create figures directory if it doesn't exist
 figDir = fullfile(projectPath, 'figures');

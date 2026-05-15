@@ -9,9 +9,9 @@
 %    - Then run this script: run('validate_direct_kinematics.m')
 
 %% ---- Setup ----
-projectPath = fileparts(mfilename('fullpath'));
+projectPath = fileparts(fileparts(mfilename('fullpath')));
 toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
-addpath(projectPath);
+addpath(genpath(projectPath));
 addpath(toolboxPath);
 
 disp('=== KUKA LBR MED - Direct Kinematics Validation ===');

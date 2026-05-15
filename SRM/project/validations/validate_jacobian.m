@@ -2,8 +2,11 @@
 % Validates the Geometric Jacobian model using numerical differentiation
 % and analyzes the effect of kinematic singularities on the Jacobian rank.
 
-% Add toolbox to path
-addpath(fullfile(fileparts(mfilename('fullpath')), '..', 'toolbox'));
+% Add organized project folders and toolbox to path
+projectPath = fileparts(fileparts(mfilename('fullpath')));
+toolboxPath = fullfile(fileparts(projectPath), 'toolbox');
+addpath(genpath(projectPath));
+addpath(toolboxPath);
 
 disp('=== KUKA LBR MED - Geometric Jacobian Validation ===');
 
