@@ -43,29 +43,31 @@ end
 N = size(q_traj, 2);
 
 % -----------------------------------------------------------------------
-% HELPER: Get 3D positions of all 8 frames (base + 7 joints)
+% HELPER: Get positions AND rotation matrices for all 8 frames
 % -----------------------------------------------------------------------
-function pts = get_frame_positions(q)
+function [pts, rots] = get_frame_transforms(q)
     d_vals     = [0; 0; 0.400; 0; 0.400; 0; 0.126];
     a_vals     = zeros(7,1);
     alpha_vals = [pi/2; -pi/2; -pi/2; pi/2; pi/2; -pi/2; 0];
     offset_vals = zeros(7,1);
 
-    pts = zeros(3, 8);  % columns: frame 0 to frame 7
+    pts  = zeros(3, 8);
+    rots = zeros(3, 3, 8);
+    rots(:,:,1) = eye(3);   % base frame = identity
+
     T = eye(4);
     for j = 1:7
-        p_j = [d_vals(j), q(j), a_vals(j), alpha_vals(j), offset_vals(j)];
-        % Inline DH matrix (numeric, no symbolic overhead)
-        theta = p_j(2);
-        d     = p_j(1);
-        a     = p_j(3);
-        alp   = p_j(4);
+        theta = q(j) + offset_vals(j);
+        d     = d_vals(j);
+        a     = a_vals(j);
+        alp   = alpha_vals(j);
         A = [cos(theta), -sin(theta)*cos(alp),  sin(theta)*sin(alp), a*cos(theta);
              sin(theta),  cos(theta)*cos(alp), -cos(theta)*sin(alp), a*sin(theta);
              0,           sin(alp),             cos(alp),            d;
              0,           0,                    0,                   1];
         T = T * A;
-        pts(:, j+1) = T(1:3, 4);
+        pts(:, j+1)    = T(1:3, 4);
+        rots(:,:, j+1) = T(1:3, 1:3);
     end
 end
 
@@ -73,7 +75,7 @@ end
 % SETUP FIGURE
 % -----------------------------------------------------------------------
 fig = figure('Name','KUKA LBR MED - 3D Visualisation', ...
-             'Color','k', 'Position',[100 80 760 680]);
+             'Color','k', 'Position',[100 80 800 700]);
 ax  = axes('Parent', fig, 'Color','k', ...
            'XColor',[0.4 0.4 0.4], 'YColor',[0.4 0.4 0.4], 'ZColor',[0.4 0.4 0.4]);
 hold(ax,'on'); grid(ax,'on'); axis(ax,'equal');
@@ -82,16 +84,18 @@ xlabel(ax,'X (m)','Color','w'); ylabel(ax,'Y (m)','Color','w'); zlabel(ax,'Z (m)
 title(ax,'KUKA LBR MED — CLIK Simulation','Color','w','FontSize',13);
 xlim(ax,[-1 1]); ylim(ax,[-1 1]); zlim(ax,[-0.1 1.1]);
 
-% Joint colours (base=white, links=gradient blue->cyan)
+AXIS_LEN = 0.25;   % length of each axis arrow in metres (increase to taste)
+
+% Joint colours
 link_colors = [
-    0.9  0.9  0.9;   % base
-    0.2  0.5  1.0;   % link 1
-    0.2  0.6  1.0;   % link 2
-    0.1  0.7  0.9;   % link 3
-    0.1  0.8  0.8;   % link 4
-    0.1  0.9  0.7;   % link 5
-    0.2  1.0  0.6;   % link 6 (wrist)
-    1.0  0.8  0.2;   % end-effector (gold)
+    0.9  0.9  0.9;
+    0.2  0.5  1.0;
+    0.2  0.6  1.0;
+    0.1  0.7  0.9;
+    0.1  0.8  0.8;
+    0.1  0.9  0.7;
+    0.2  1.0  0.6;
+    1.0  0.8  0.2;
 ];
 
 % Draw base plate
@@ -99,10 +103,10 @@ th = linspace(0,2*pi,40);
 fill3(ax, 0.08*cos(th), 0.08*sin(th), zeros(1,40), [0.3 0.3 0.3], 'EdgeColor','none');
 
 % Initial pose
-pts = get_frame_positions(q_traj(:,1));
+[pts, rots] = get_frame_transforms(q_traj(:,1));
 
-% Pre-draw link lines and joint spheres
-hLink = gobjects(7,1);
+% Pre-draw links and joints
+hLink  = gobjects(7,1);
 hJoint = gobjects(8,1);
 for j = 1:7
     hLink(j) = plot3(ax, pts(1,[j,j+1]), pts(2,[j,j+1]), pts(3,[j,j+1]), ...
@@ -110,13 +114,37 @@ for j = 1:7
 end
 for j = 1:8
     hJoint(j) = plot3(ax, pts(1,j), pts(2,j), pts(3,j), ...
-        'o', 'MarkerSize', 10, 'MarkerFaceColor', link_colors(j,:), ...
-        'MarkerEdgeColor', 'w', 'LineWidth', 1.2);
+        'o', 'MarkerSize', 9, 'MarkerFaceColor', link_colors(j,:), ...
+        'MarkerEdgeColor','w', 'LineWidth',1.2);
 end
+
+% Pre-draw coordinate frame axes ONLY at physically distinct nodes.
+% Frames 0,1,2 share the base origin; 3&4 share the elbow; 5&6 share the wrist.
+% We draw one set of axes per unique position: frames 0, 3, 5, 7.
+AXIS_FRAMES = [1, 4, 6, 8];  % 1-indexed into pts/rots (frame 0,3,5,7)
+N_AXES = numel(AXIS_FRAMES);
+hAxisX = gobjects(N_AXES,1);
+hAxisY = gobjects(N_AXES,1);
+hAxisZ = gobjects(N_AXES,1);
+for fi = 1:N_AXES
+    j  = AXIS_FRAMES(fi);
+    p  = pts(:,j);
+    Rj = rots(:,:,j);
+    hAxisX(fi) = quiver3(ax, p(1), p(2), p(3), Rj(1,1), Rj(2,1), Rj(3,1), ...
+        AXIS_LEN, 'r', 'LineWidth', 2.0, 'MaxHeadSize', 0.5, 'AutoScale','off');
+    hAxisY(fi) = quiver3(ax, p(1), p(2), p(3), Rj(1,2), Rj(2,2), Rj(3,2), ...
+        AXIS_LEN, 'g', 'LineWidth', 2.0, 'MaxHeadSize', 0.5, 'AutoScale','off');
+    hAxisZ(fi) = quiver3(ax, p(1), p(2), p(3), Rj(1,3), Rj(2,3), Rj(3,3), ...
+        AXIS_LEN, 'b', 'LineWidth', 2.0, 'MaxHeadSize', 0.5, 'AutoScale','off');
+end
+
+% Legend for axes colours
+legend(ax, [hAxisX(1), hAxisY(1), hAxisZ(1)], {'X axis','Y axis','Z axis'}, ...
+    'TextColor','w', 'Color','none', 'EdgeColor',[0.4 0.4 0.4], 'Location','northeast');
 
 % End-effector trail
 hTrail = plot3(ax, pts(1,8), pts(2,8), pts(3,8), ...
-    '-', 'Color',[1 0.6 0 0.5], 'LineWidth',1.2);
+    '-', 'Color',[1 0.6 0 0.6], 'LineWidth', 1.5);
 trail_x = pts(1,8); trail_y = pts(2,8); trail_z = pts(3,8);
 MAX_TRAIL = 300;
 
@@ -126,12 +154,15 @@ hTime = text(ax, 0.02, 0.95, 0, sprintf('t = %.2f s', 0), ...
 % -----------------------------------------------------------------------
 % ANIMATION LOOP
 % -----------------------------------------------------------------------
-disp('Animating... close the figure window to stop.');
+% Enable interactive 3D rotation while animating
+rotate3d(ax, 'on');
+
+disp('Animating... you can drag to rotate the view. Close the figure to stop.');
 tic;
 for k = 1:N
     if ~ishandle(fig), break; end
 
-    pts = get_frame_positions(q_traj(:,k));
+    [pts, rots] = get_frame_transforms(q_traj(:,k));
 
     % Update links
     for j = 1:7
@@ -144,6 +175,19 @@ for k = 1:N
         set(hJoint(j), 'XData', pts(1,j), 'YData', pts(2,j), 'ZData', pts(3,j));
     end
 
+    % Update frame axes (only at the 4 distinct physical nodes)
+    for fi = 1:N_AXES
+        j  = AXIS_FRAMES(fi);
+        p  = pts(:,j);
+        Rj = rots(:,:,j);
+        set(hAxisX(fi), 'XData',p(1),'YData',p(2),'ZData',p(3), ...
+            'UData',Rj(1,1)*AXIS_LEN,'VData',Rj(2,1)*AXIS_LEN,'WData',Rj(3,1)*AXIS_LEN);
+        set(hAxisY(fi), 'XData',p(1),'YData',p(2),'ZData',p(3), ...
+            'UData',Rj(1,2)*AXIS_LEN,'VData',Rj(2,2)*AXIS_LEN,'WData',Rj(3,2)*AXIS_LEN);
+        set(hAxisZ(fi), 'XData',p(1),'YData',p(2),'ZData',p(3), ...
+            'UData',Rj(1,3)*AXIS_LEN,'VData',Rj(2,3)*AXIS_LEN,'WData',Rj(3,3)*AXIS_LEN);
+    end
+
     % Update trail
     trail_x(end+1) = pts(1,8);
     trail_y(end+1) = pts(2,8);
@@ -153,7 +197,7 @@ for k = 1:N
         trail_y = trail_y(end-MAX_TRAIL+1:end);
         trail_z = trail_z(end-MAX_TRAIL+1:end);
     end
-    set(hTrail, 'XData', trail_x, 'YData', trail_y, 'ZData', trail_z);
+    set(hTrail,'XData',trail_x,'YData',trail_y,'ZData',trail_z);
 
     set(hTime, 'String', sprintf('t = %.2f s', (k-1)*dt));
 
@@ -162,3 +206,4 @@ for k = 1:N
     tic;
 end
 disp('Animation complete!');
+
