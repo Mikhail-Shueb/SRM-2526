@@ -12,6 +12,7 @@ Project files for SRMan Phase I.
 | `04_jacobian/`           | Jacobian generator and notes                           |
 | `05_clik/`               | CLIK controller, model generator, experiments, metrics |
 | `06_visualization/`      | 3D visualization scripts                               |
+| `07_phase2_trajectory/`  | Phase II trocar/tool trajectory helpers                |
 | `validations/`           | validation scripts for steps 2 to 5                    |
 | `generated/`             | generated MATLAB functions                             |
 | `simulink/`              | Simulink models and libraries                          |
@@ -37,6 +38,8 @@ run('validations/validate_direct_kinematics.m')
 run('validations/validate_inverse_kinematics.m')
 run('validations/validate_jacobian.m')
 run('validations/validate_clik.m')
+run('validations/validate_phase2_trocar_inputs.m')
+run('validations/validate_phase2_trocar_motion.m')
 ```
 
 Regenerate generated functions or models:
