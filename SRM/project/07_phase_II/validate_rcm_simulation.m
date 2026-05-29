@@ -3,6 +3,13 @@
 
 clear; clc; close all;
 
+% Set up paths
+projectPath = fileparts(pwd);
+workspacePath = fileparts(projectPath);
+addpath(fullfile(projectPath, 'generated'));
+addpath(fullfile(workspacePath, 'toolbox'));
+addpath(pwd);
+
 disp('Running Surgical RCM Simulink simulation...');
 simOut = sim('Surgical_RCM_Sim', 'StopTime', '20.0');
 disp('Simulation complete!');
@@ -30,12 +37,12 @@ end
 
 % Parameters
 L = 0.15;
-c_r = [-0.6; 0.0; 0.4];
+c_r = [-0.5; 0.0; 0.4];
 targets = [
-    -0.6, 0.0, 0.3;  % m0 (Start)
-    -0.6, 0.1, 0.25; % m1
-    -0.6, -0.1, 0.25;% m2
-    -0.65, 0.0, 0.30 % m3
+    -0.5, 0.0, 0.3;   % m0 (Start)
+    -0.5, 0.08, 0.28; % m1
+    -0.5, -0.08, 0.28;% m2
+    -0.55, 0.0, 0.30  % m3
 ];
 
 % Pre-allocate tracking arrays
@@ -60,7 +67,7 @@ for i = 1:length(t)
 end
 
 % Plot 1: RCM Error
-figure('Name', 'RCM Constraint Error', 'Color', 'w');
+h_fig1 = figure('Name', 'RCM Constraint Error', 'Color', 'w');
 plot(t, e_rcm_mag * 1000, 'r', 'LineWidth', 2); % Convert to mm
 grid on;
 title('Trocar Constraint Error over Time');
@@ -68,7 +75,7 @@ xlabel('Time (s)');
 ylabel('Distance from Trocar Center (mm)');
 
 % Plot 2: 3D Trajectory
-figure('Name', 'Surgical Trajectory', 'Color', 'w');
+h_fig2 = figure('Name', 'Surgical Trajectory', 'Color', 'w');
 hold on; grid on; axis equal; view(3);
 title('Tooltip Trajectory inside the Body');
 xlabel('X'); ylabel('Y'); zlabel('Z');
@@ -95,4 +102,8 @@ for i = 1:step_size:length(t)
 end
 
 legend('Tooltip Path', 'Trocar', 'Targets', 'Needle Shaft');
-disp('Validation plots generated successfully.');
+
+% Save the plots as images
+saveas(h_fig1, 'rcm_error.png');
+saveas(h_fig2, 'trajectory_3d.png');
+disp('Validation plots generated and saved as rcm_error.png and trajectory_3d.png successfully.');

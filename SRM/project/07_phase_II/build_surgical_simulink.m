@@ -4,8 +4,9 @@
 clear; clc;
 
 projectPath = fileparts(pwd);
+workspacePath = fileparts(projectPath);
 addpath(fullfile(projectPath, 'generated'));
-addpath(fullfile(projectPath, 'toolbox'));
+addpath(fullfile(workspacePath, 'toolbox'));
 addpath(pwd); % Ensure 07_phase_II is on path
 
 modelName = 'Surgical_RCM_Sim';
@@ -24,7 +25,7 @@ set_param([modelName '/Trajectory Planner'], 'Position', [150, 70, 280, 160]);
 
 % 3. Add Constant Trocar Position
 add_block('simulink/Sources/Constant', [modelName '/Trocar Position']);
-set_param([modelName '/Trocar Position'], 'Value', '[-0.6; 0.0; 0.4]');
+set_param([modelName '/Trocar Position'], 'Value', '[-0.5; 0.0; 0.4]');
 set_param([modelName '/Trocar Position'], 'Position', [150, 200, 280, 230]);
 
 % 4. Add RCM CLIK Controller
@@ -33,7 +34,7 @@ set_param([modelName '/RCM CLIK'], 'Position', [350, 70, 480, 260]);
 
 % 5. Add Integrator for q
 add_block('simulink/Continuous/Integrator', [modelName '/Integrator']);
-set_param([modelName '/Integrator'], 'InitialCondition', '[-2.5506; -1.966; 1.0017; -1.4446; 2.0894; -1.1096; 0.7]');
+set_param([modelName '/Integrator'], 'InitialCondition', '[0; 0.4085; 3.1416; 0.6128; -3.1416; 2.1203; 3.1416]');
 set_param([modelName '/Integrator'], 'Position', [550, 150, 580, 180]);
 
 % 6. Add Scope for q_dot and q

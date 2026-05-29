@@ -1,4 +1,14 @@
 function q_dot = rcm_clik_controller(q, p_d, v_d, c_r)
+    %#codegen
+    assert(isa(q, 'double'));
+    assert(all(size(q) == [7, 1]));
+    assert(isa(p_d, 'double'));
+    assert(all(size(p_d) == [3, 1]));
+    assert(isa(v_d, 'double'));
+    assert(all(size(v_d) == [3, 1]));
+    assert(isa(c_r, 'double'));
+    assert(all(size(c_r) == [3, 1]));
+
     q_dot = zeros(7, 1);
     % Gains
     K_rcm = 10;

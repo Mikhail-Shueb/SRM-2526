@@ -1,11 +1,16 @@
 function [p_d, v_d] = trajectory_planner(t)
+    %#codegen
+    assert(isa(t, 'double'));
+    assert(all(size(t) == [1, 1]));
+    
     p_d = zeros(3, 1);
     v_d = zeros(3, 1);
-    % Targets
-    m0 = [-0.60;  0.00; 0.30]; % Starting position
-    m1 = [-0.60;  0.10; 0.25];
-    m2 = [-0.60; -0.10; 0.25];
-    m3 = [-0.65;  0.00; 0.30];
+    
+    % Reachable Targets (Trocar at [-0.5; 0.0; 0.4], L = 0.15m)
+    m0 = [-0.50;  0.00; 0.30]; % Starting position (10.0 cm from trocar)
+    m1 = [-0.50;  0.08; 0.28]; % Target 1 (14.4 cm from trocar)
+    m2 = [-0.50; -0.08; 0.28]; % Target 2 (14.4 cm from trocar)
+    m3 = [-0.55;  0.00; 0.30]; % Target 3 (11.2 cm from trocar)
     
     T_seg = 5.0; % 5 seconds per segment
     
