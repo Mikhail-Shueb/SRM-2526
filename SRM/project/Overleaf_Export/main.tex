@@ -175,10 +175,45 @@ Using a task-priority framework, the RCM constraint is set as the primary (hard)
 where $J_{tool} = J_v - L [z_e]_{\times} J_w$.
 
 \subsection{Simulation Verification}
-To guarantee that the robot is physically capable of reaching the targets from above (flange strictly above the trocar, $z_e$ pointing downward), the targets and trocar were placed within the workspace: $c_r = [-0.5; 0.0; 0.4]$, $m_0 = [-0.5; 0.0; 0.3]$, $m_1 = [-0.5; 0.08; 0.28]$, $m_2 = [-0.5; -0.08; 0.28]$, and $m_3 = [-0.55; 0.0; 0.30]$.
+To guarantee that the robot is physically capable of reaching the targets from above (flange strictly above the trocar, $z_e$ pointing downward), the targets and trocar were placed within the workspace: $c_r = [-0.5; 0.0; 0.4]$, $m_0 = [-0.50; 0.00; 0.30]$, $m_1 = [-0.50; 0.08; 0.28]$, $m_2 = [-0.48; 0.05; 0.27]$, $m_3 = [-0.48; -0.05; 0.27]$, $m_4 = [-0.50; -0.08; 0.28]$, and $m_5 = [-0.55; 0.00; 0.30]$.
 The analytical IK solver computed the perfect initial configuration $q_0 = [0; 0.4085; 3.1416; 0.6128; -3.1416; 2.1203; 3.1416]\text{ rad}$, which places the robot flange at $p_e = [-0.5; 0.0; 0.45]$ (above the trocar) and points the tool straight down ($z_e = [0; 0; -1]$).
 
-The simulation was run for 20 seconds. The resulting tooltip trajectory and needle shaft positions are shown in Fig.~\ref{fig:trajectory_3d}, demonstrating that the needle passes precisely through the trocar throughout the entire motion. Figure~\ref{fig:rcm_error} shows the trocar constraint error, which stays below $0.15\text{ mm}$ during the segment transitions.
+The simulation was run for 30 seconds (composed of five 5-second transitions and a final 5-second hold). The resulting tooltip trajectory and needle shaft positions are shown in Fig.~\ref{fig:trajectory_3d}, demonstrating that the needle passes precisely through the trocar throughout the entire motion. Figure~\ref{fig:rcm_error} shows the trocar constraint error, which stays below $0.10\text{ mm}$ during all transitions.
+
+The error margin at each target point and the average error in between each point (transition intervals) are presented in Table~\ref{tab:target_errors} and Table~\ref{tab:transition_errors}, respectively. The tracking results indicate sub-millimeter precision for the primary trocar RCM constraint, with a maximum transient RCM error of $0.091\text{ mm}$ and a steady-state error of $0.0057\text{ mm}$ at $t = 30.0\text{ s}$. The tooltip tracking error remains small, reaching a maximum of $5.96\text{ mm}$ during transient phases and settling to $0.0056\text{ mm}$ during steady-state hold.
+
+\begin{table}[H]
+\centering
+\caption{Error margin at each target point.}
+\label{tab:target_errors}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Target Point & Time (s) & Trocar RCM Error (mm) & Tooltip Tracking Error (mm) \\ \midrule
+$m_0$ (Start) & 0  & 0.007143 & 0.011697 \\
+$m_1$         & 5  & 0.031470 & 0.295253 \\
+$m_2$         & 10 & 0.032225 & 0.490989 \\
+$m_3$         & 15 & 0.046123 & 0.694725 \\
+$m_4$         & 20 & 0.042354 & 0.295643 \\
+$m_5$ (Start) & 25 & 0.052756 & 2.033994 \\
+$m_5$ (End)   & 30 & 0.005754 & 0.005565 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Average and maximum tracking errors in between target points (transitions).}
+\label{tab:transition_errors}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Transition & Interval (s) & Avg RCM Err (mm) & Max RCM Err (mm) & Avg Tooltip Err (mm) & Max Tooltip Err (mm) \\ \midrule
+$m_0 \rightarrow m_1$ & $[0, 5]$   & 0.030683 & 0.070445 & 2.948901 & 5.346907 \\
+$m_1 \rightarrow m_2$ & $[5, 10]$  & 0.041036 & 0.075294 & 1.228491 & 1.916294 \\
+$m_2 \rightarrow m_3$ & $[10, 15]$ & 0.049083 & 0.079246 & 2.957073 & 4.614125 \\
+$m_3 \rightarrow m_4$ & $[15, 20]$ & 0.059974 & 0.090587 & 1.251251 & 1.890619 \\
+$m_4 \rightarrow m_5$ & $[20, 25]$ & 0.039512 & 0.076108 & 3.312102 & 5.963025 \\
+$m_5$ Hold            & $[25, 30]$ & 0.049394 & 0.091006 & 0.319070 & 2.033994 \\ \bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[H]
 \centering

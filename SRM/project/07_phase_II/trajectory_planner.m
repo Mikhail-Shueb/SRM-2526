@@ -7,10 +7,12 @@ function [p_d, v_d] = trajectory_planner(t)
     v_d = zeros(3, 1);
     
     % Reachable Targets (Trocar at [-0.5; 0.0; 0.4], L = 0.15m)
-    m0 = [-0.50;  0.00; 0.30]; % Starting position (10.0 cm from trocar)
-    m1 = [-0.50;  0.08; 0.28]; % Target 1 (14.4 cm from trocar)
-    m2 = [-0.50; -0.08; 0.28]; % Target 2 (14.4 cm from trocar)
-    m3 = [-0.55;  0.00; 0.30]; % Target 3 (11.2 cm from trocar)
+    m0 = [-0.50;  0.00; 0.30]; % Starting position
+    m1 = [-0.50;  0.08; 0.28]; % Target 1
+    m2 = [-0.48;  0.05; 0.27]; % Target 2
+    m3 = [-0.48; -0.05; 0.27]; % Target 3
+    m4 = [-0.50; -0.08; 0.28]; % Target 4
+    m5 = [-0.55;  0.00; 0.30]; % Target 5
     
     T_seg = 5.0; % 5 seconds per segment
     
@@ -23,8 +25,14 @@ function [p_d, v_d] = trajectory_planner(t)
     elseif t < 3*T_seg
         p_start = m2; p_end = m3;
         tau = t - 2*T_seg;
+    elseif t < 4*T_seg
+        p_start = m3; p_end = m4;
+        tau = t - 3*T_seg;
+    elseif t < 5*T_seg
+        p_start = m4; p_end = m5;
+        tau = t - 4*T_seg;
     else
-        p_start = m3; p_end = m3;
+        p_start = m5; p_end = m5;
         tau = T_seg;
     end
     

@@ -91,7 +91,7 @@ add_line(modelName, 'Integrator/1', 'q Scope/1');
 add_line(modelName, 'Integrator/1', 'q_workspace/1');
 
 % Simulation settings
-set_param(modelName, 'StopTime', '20.0'); % 3 segments * 5 seconds + 5s hold
+set_param(modelName, 'StopTime', '30.0'); % 5 segments * 5 seconds + 5s hold
 
 save_system(modelName, fullfile(pwd, [modelName '.slx']));
 open_system(modelName);

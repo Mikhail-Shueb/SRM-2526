@@ -11,7 +11,7 @@ addpath(fullfile(workspacePath, 'toolbox'));
 addpath(pwd);
 
 disp('Running Surgical RCM Simulink simulation...');
-simOut = sim('Surgical_RCM_Sim', 'StopTime', '20.0');
+simOut = sim('Surgical_RCM_Sim', 'StopTime', '30.0');
 disp('Simulation complete!');
 
 % Extract time and joint data
@@ -41,14 +41,17 @@ c_r = [-0.5; 0.0; 0.4];
 targets = [
     -0.5, 0.0, 0.3;   % m0 (Start)
     -0.5, 0.08, 0.28; % m1
-    -0.5, -0.08, 0.28;% m2
-    -0.55, 0.0, 0.30  % m3
+    -0.48, 0.05, 0.27;% m2
+    -0.48, -0.05, 0.27;% m3
+    -0.5, -0.08, 0.28;% m4
+    -0.55, 0.0, 0.30  % m5
 ];
 
 % Pre-allocate tracking arrays
 p_e_all = zeros(length(t), 3);
 p_tool_all = zeros(length(t), 3);
 e_rcm_mag = zeros(length(t), 1);
+e_tool_mag = zeros(length(t), 1);
 
 % Evaluate kinematics over time
 for i = 1:length(t)
@@ -64,6 +67,10 @@ for i = 1:length(t)
     lambda = (c_r - p_e)' * z_e;
     p_c = p_e + lambda * z_e;
     e_rcm_mag(i) = norm(c_r - p_c);
+    
+    % Tooltip tracking error
+    [p_d_t, ~] = trajectory_planner(t(i));
+    e_tool_mag(i) = norm(p_d_t - p_tool);
 end
 
 % Plot 1: RCM Error
@@ -107,3 +114,98 @@ legend('Tooltip Path', 'Trocar', 'Targets', 'Needle Shaft');
 saveas(h_fig1, 'rcm_error.png');
 saveas(h_fig2, 'trajectory_3d.png');
 disp('Validation plots generated and saved as rcm_error.png and trajectory_3d.png successfully.');
+
+% --- Error Statistics Analysis ---
+% Find indices for target timestamps
+idx_0  = find(t >= 0, 1);
+idx_5  = find(t >= 5, 1);
+idx_10 = find(t >= 10, 1);
+idx_15 = find(t >= 15, 1);
+idx_20 = find(t >= 20, 1);
+idx_25 = find(t >= 25, 1);
+idx_30 = find(t >= 30, 1);
+if isempty(idx_30), idx_30 = length(t); end
+
+% Error at specific points (convert to mm)
+err_points_rcm = [e_rcm_mag(idx_0); e_rcm_mag(idx_5); e_rcm_mag(idx_10); e_rcm_mag(idx_15); e_rcm_mag(idx_20); e_rcm_mag(idx_25); e_rcm_mag(idx_30)] * 1000;
+err_points_tool = [e_tool_mag(idx_0); e_tool_mag(idx_5); e_tool_mag(idx_10); e_tool_mag(idx_15); e_tool_mag(idx_20); e_tool_mag(idx_25); e_tool_mag(idx_30)] * 1000;
+
+% Print Target Point Errors Table
+fprintf('\n=========================================================\n');
+fprintf('            ERROR MARGIN AT EACH TARGET POINT\n');
+fprintf('=========================================================\n');
+fprintf('%-15s | %-10s | %-18s | %-18s\n', 'Target Point', 'Time (s)', 'RCM Error (mm)', 'Tooltip Error (mm)');
+fprintf('---------------------------------------------------------\n');
+point_names = {'m0 (Start)', 'm1', 'm2', 'm3', 'm4', 'm5 (Start)', 'm5 (End)'};
+times_pts = [0, 5, 10, 15, 20, 25, 30];
+for k = 1:7
+    fprintf('%-15s | %-10.1f | %-18.6f | %-18.6f\n', point_names{k}, times_pts(k), err_points_rcm(k), err_points_tool(k));
+end
+fprintf('=========================================================\n\n');
+
+% Average and max errors in between points (intervals)
+intervals = {
+    'm0 -> m1', idx_0, idx_5, '[0, 5]';
+    'm1 -> m2', idx_5, idx_10, '[5, 10]';
+    'm2 -> m3', idx_10, idx_15, '[10, 15]';
+    'm3 -> m4', idx_15, idx_20, '[15, 20]';
+    'm4 -> m5', idx_20, idx_25, '[20, 25]';
+    'm5 Hold', idx_25, idx_30, '[25, 30]'
+};
+
+fprintf('=========================================================================================\n');
+fprintf('                         AVERAGE ERROR IN BETWEEN TARGET POINTS\n');
+fprintf('=========================================================================================\n');
+fprintf('%-12s | %-12s | %-18s | %-18s | %-18s | %-18s\n', ...
+    'Transition', 'Interval (s)', 'Avg RCM Err (mm)', 'Max RCM Err (mm)', 'Avg Tooltip Err(mm)', 'Max Tooltip Err(mm)');
+fprintf('-----------------------------------------------------------------------------------------\n');
+
+transition_data = struct();
+for k = 1:size(intervals, 1)
+    name = intervals{k, 1};
+    i_start = intervals{k, 2};
+    i_end = intervals{k, 3};
+    time_str = intervals{k, 4};
+    
+    sub_rcm = e_rcm_mag(i_start:i_end) * 1000;
+    sub_tool = e_tool_mag(i_start:i_end) * 1000;
+    
+    avg_rcm = mean(sub_rcm);
+    max_rcm = max(sub_rcm);
+    avg_tool = mean(sub_tool);
+    max_tool = max(sub_tool);
+    
+    fprintf('%-12s | %-12s | %-18.6f | %-18.6f | %-18.6f | %-18.6f\n', ...
+        name, time_str, avg_rcm, max_rcm, avg_tool, max_tool);
+        
+    transition_data(k).name = name;
+    transition_data(k).time_str = time_str;
+    transition_data(k).avg_rcm = avg_rcm;
+    transition_data(k).max_rcm = max_rcm;
+    transition_data(k).avg_tool = avg_tool;
+    transition_data(k).max_tool = max_tool;
+end
+fprintf('=========================================================================================\n\n');
+
+% Write results to a file for Overleaf report copy-pasting
+fid = fopen('error_statistics.txt', 'w');
+if fid ~= -1
+    fprintf(fid, 'Target Point Errors Table:\n\n');
+    fprintf(fid, '| Target Point | Time (s) | Trocar RCM Error (mm) | Tooltip Tracking Error (mm) |\n');
+    fprintf(fid, '| :--- | :--- | :--- | :--- |\n');
+    for k = 1:7
+        fprintf(fid, '| %s | %d | %.6f | %.6f |\n', point_names{k}, times_pts(k), err_points_rcm(k), err_points_tool(k));
+    end
+    
+    fprintf(fid, '\n\nTransition Errors Table:\n\n');
+    fprintf(fid, '| Transition | Time Interval (s) | Avg RCM Error (mm) | Max RCM Error (mm) | Avg Tooltip Error (mm) | Max Tooltip Error (mm) |\n');
+    fprintf(fid, '| :--- | :--- | :--- | :--- | :--- | :--- |\n');
+    for k = 1:size(intervals, 1)
+        fprintf(fid, '| %s | %s | %.6f | %.6f | %.6f | %.6f |\n', ...
+            transition_data(k).name, transition_data(k).time_str, ...
+            transition_data(k).avg_rcm, transition_data(k).max_rcm, ...
+            transition_data(k).avg_tool, transition_data(k).max_tool);
+    end
+    fclose(fid);
+    disp('Error statistics tables written to error_statistics.txt successfully.');
+end
