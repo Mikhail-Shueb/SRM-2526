@@ -178,9 +178,9 @@ where $J_{tool} = J_v - L [z_e]_{\times} J_w$.
 To guarantee that the robot is physically capable of reaching the targets from above (flange strictly above the trocar, $z_e$ pointing downward), the targets and trocar were placed within the workspace: $c_r = [-0.5; 0.0; 0.4]$, $m_0 = [-0.50; 0.00; 0.30]$, $m_1 = [-0.50; 0.08; 0.28]$, $m_2 = [-0.52; 0.04; 0.27]$, $m_3 = [-0.46; -0.04; 0.32]$, $m_4 = [-0.50; -0.08; 0.28]$, and $m_5 = [-0.55; 0.00; 0.30]$.
 The analytical IK solver computed the perfect initial configuration $q_0 = [0; 0.4085; 3.1416; 0.6128; -3.1416; 2.1203; 3.1416]\text{ rad}$, which places the robot flange at $p_e = [-0.5; 0.0; 0.45]$ (above the trocar) and points the tool straight down ($z_e = [0; 0; -1]$).
 
-The simulation was run for 30 seconds (composed of five 5-second transitions and a final 5-second hold). The resulting tooltip trajectory, including both the red dashed planned path (shifted visually by $+3\text{ mm}$ along the Y-axis to run side-by-side during periods of overlap) and the blue solid executed path, is shown in Fig.~\ref{fig:trajectory_3d}. It demonstrates that the needle passes precisely through the trocar throughout the entire motion. Figure~\ref{fig:rcm_error} shows the trocar constraint error, which stays below $0.10\text{ mm}$ during all transitions.
+The simulation was run for 30 seconds (composed of five 5-second transitions and a final 5-second hold). The resulting tooltip trajectory, including both the red dashed planned path (shifted visually by $+3\text{ mm}$ along the Y-axis to run side-by-side during periods of overlap) and the blue solid executed path, is shown in Fig.~\ref{fig:trajectory_3d}. It demonstrates that the needle passes precisely through the trocar throughout the entire motion. Figure~\ref{fig:rcm_error} shows the trocar constraint error, which stays below $0.11\text{ mm}$ during all transitions.
 
-The error margin at each target point and the average error in between each point (transition intervals) are presented in Table~\ref{tab:target_errors} and Table~\ref{tab:transition_errors}, respectively. The tracking results indicate sub-millimeter precision for the primary trocar RCM constraint, with a maximum transient RCM error of $0.084\text{ mm}$ (during the final hold) and a steady-state error of $0.0108\text{ mm}$ at $t = 30.0\text{ s}$. The tooltip tracking error remains small at static targets (under $0.4\text{ mm}$ at target points $m_0, m_1, m_2$, and settling to $0.0095\text{ mm}$ during steady-state hold), with a maximum transient tracking error of $13.51\text{ mm}$ during the dynamic three-dimensional $m_2 \rightarrow m_3$ transition.
+The error margin at each target point and the average error in between each point (transition intervals) are presented in Table~\ref{tab:target_errors} and Table~\ref{tab:transition_errors}, respectively. The tracking results indicate sub-millimeter precision for the primary trocar RCM constraint, with a maximum transient RCM error of $0.1052\text{ mm}$ (during the first transition) and a steady-state error of $0.0000\text{ mm}$ at $t = 30.0\text{ s}$. The tooltip tracking error remains exceptionally small at all target points (under $0.15\text{ mm}$ at all static targets, and settling to $0.0000\text{ mm}$ during steady-state hold), with a maximum transient tracking error of $0.1858\text{ mm}$ during the $m_0 \rightarrow m_1$ transition.
 
 \begin{table}[H]
 \centering
@@ -190,12 +190,12 @@ The error margin at each target point and the average error in between each poin
 \toprule
 Target Point & Time (s) & Trocar RCM Error (mm) & Tooltip Tracking Error (mm) \\ \midrule
 $m_0$ (Start) & 0  & 0.007143 & 0.011697 \\
-$m_1$         & 5  & 0.031682 & 0.381376 \\
-$m_2$         & 10 & 0.028543 & 0.310016 \\
-$m_3$         & 15 & 0.017113 & 4.686164 \\
-$m_4$         & 20 & 0.034973 & 1.063099 \\
-$m_5$ (Start) & 25 & 0.068367 & 1.448655 \\
-$m_5$ (End)   & 30 & 0.010763 & 0.009452 \\ \bottomrule
+$m_1$         & 5  & 0.008550 & 0.065520 \\
+$m_2$         & 10 & 0.000953 & 0.129795 \\
+$m_3$         & 15 & 0.003167 & 0.049255 \\
+$m_4$         & 20 & 0.022055 & 0.141048 \\
+$m_5$ (Start) & 25 & 0.006190 & 0.036866 \\
+$m_5$ (End)   & 30 & 0.000000 & 0.000000 \\ \bottomrule
 \end{tabular}
 \end{table}
 
@@ -206,12 +206,12 @@ $m_5$ (End)   & 30 & 0.010763 & 0.009452 \\ \bottomrule
 \begin{tabular}{@{}cccccc@{}}
 \toprule
 Transition & Interval (s) & Avg RCM Err (mm) & Max RCM Err (mm) & Avg Tooltip Err (mm) & Max Tooltip Err (mm) \\ \midrule
-$m_0 \rightarrow m_1$ & $[0, 5]$   & 0.030695 & 0.070445 & 2.953685 & 5.346907 \\
-$m_1 \rightarrow m_2$ & $[5, 10]$  & 0.033510 & 0.046225 & 1.026467 & 1.563136 \\
-$m_2 \rightarrow m_3$ & $[10, 15]$ & 0.036659 & 0.069747 & 8.200669 & 13.513319 \\
-$m_3 \rightarrow m_4$ & $[15, 20]$ & 0.028372 & 0.045869 & 6.243548 & 11.341174 \\
-$m_4 \rightarrow m_5$ & $[20, 25]$ & 0.042788 & 0.068367 & 3.103206 & 5.710279 \\
-$m_5$ Hold            & $[25, 30]$ & 0.050951 & 0.084123 & 0.236115 & 1.448655 \\ \bottomrule
+$m_0 \rightarrow m_1$ & $[0, 5]$   & 0.009865 & 0.105213 & 0.020335 & 0.185847 \\
+$m_1 \rightarrow m_2$ & $[5, 10]$  & 0.003946 & 0.010926 & 0.028859 & 0.129795 \\
+$m_2 \rightarrow m_3$ & $[10, 15]$ & 0.022614 & 0.098094 & 0.038649 & 0.129795 \\
+$m_3 \rightarrow m_4$ & $[15, 20]$ & 0.012369 & 0.049387 & 0.034262 & 0.141048 \\
+$m_4 \rightarrow m_5$ & $[20, 25]$ & 0.013092 & 0.035113 & 0.034027 & 0.141048 \\
+$m_5$ Hold            & $[25, 30]$ & 0.001101 & 0.006190 & 0.007714 & 0.036866 \\ \bottomrule
 \end{tabular}
 \end{table}
 
