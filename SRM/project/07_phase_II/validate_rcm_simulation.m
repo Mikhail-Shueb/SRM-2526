@@ -41,8 +41,8 @@ c_r = [-0.5; 0.0; 0.4];
 targets = [
     -0.5, 0.0, 0.3;   % m0 (Start)
     -0.5, 0.08, 0.28; % m1
-    -0.48, 0.05, 0.27;% m2
-    -0.48, -0.05, 0.27;% m3
+    -0.52, 0.04, 0.27;% m2 (Repositioned)
+    -0.46, -0.04, 0.32;% m3 (Repositioned)
     -0.5, -0.08, 0.28;% m4
     -0.55, 0.0, 0.30  % m5
 ];
@@ -50,6 +50,7 @@ targets = [
 % Pre-allocate tracking arrays
 p_e_all = zeros(length(t), 3);
 p_tool_all = zeros(length(t), 3);
+p_d_all = zeros(length(t), 3);
 e_rcm_mag = zeros(length(t), 1);
 e_tool_mag = zeros(length(t), 1);
 
@@ -70,6 +71,7 @@ for i = 1:length(t)
     
     % Tooltip tracking error
     [p_d_t, ~] = trajectory_planner(t(i));
+    p_d_all(i, :) = p_d_t';
     e_tool_mag(i) = norm(p_d_t - p_tool);
 end
 
@@ -87,8 +89,13 @@ hold on; grid on; axis equal; view(3);
 title('Tooltip Trajectory inside the Body');
 xlabel('X'); ylabel('Y'); zlabel('Z');
 
-% Plot the path
+% Plot the executed path (solid blue)
 plot3(p_tool_all(:,1), p_tool_all(:,2), p_tool_all(:,3), 'b-', 'LineWidth', 2);
+
+% Plot the planned path (dashed red, shifted slightly in Y for side-by-side visualization)
+p_d_offset = p_d_all;
+p_d_offset(:, 2) = p_d_offset(:, 2) + 0.003;
+plot3(p_d_offset(:,1), p_d_offset(:,2), p_d_offset(:,3), 'r--', 'LineWidth', 1.5);
 
 % Plot Trocar
 plot3(c_r(1), c_r(2), c_r(3), 'c^', 'MarkerSize', 10, 'MarkerFaceColor', 'c');
@@ -108,7 +115,7 @@ for i = 1:step_size:length(t)
     end
 end
 
-legend('Tooltip Path', 'Trocar', 'Targets', 'Needle Shaft');
+legend('Executed Path', 'Planned Path (offset +3mm Y)', 'Trocar', 'Targets', 'Needle Shaft');
 
 % Save the plots as images
 saveas(h_fig1, 'rcm_error.png');

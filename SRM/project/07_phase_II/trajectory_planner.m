@@ -9,8 +9,8 @@ function [p_d, v_d] = trajectory_planner(t)
     % Reachable Targets (Trocar at [-0.5; 0.0; 0.4], L = 0.15m)
     m0 = [-0.50;  0.00; 0.30]; % Starting position
     m1 = [-0.50;  0.08; 0.28]; % Target 1
-    m2 = [-0.48;  0.05; 0.27]; % Target 2
-    m3 = [-0.48; -0.05; 0.27]; % Target 3
+    m2 = [-0.52;  0.04; 0.27]; % Target 2 (Repositioned)
+    m3 = [-0.46; -0.04; 0.32]; % Target 3 (Repositioned)
     m4 = [-0.50; -0.08; 0.28]; % Target 4
     m5 = [-0.55;  0.00; 0.30]; % Target 5
     
