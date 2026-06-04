@@ -1,20 +1,19 @@
 function [p_d, v_d] = trajectory_planner(t)
-    %#codegen
     assert(isa(t, 'double'));
     assert(all(size(t) == [1, 1]));
     
     p_d = zeros(3, 1);
     v_d = zeros(3, 1);
     
-    % Reachable Targets (Trocar at [-0.5; 0.0; 0.4], L = 0.15m)
-    m0 = [-0.50;  0.00; 0.30]; % Starting position
-    m1 = [-0.50;  0.08; 0.28]; % Target 1
-    m2 = [-0.52;  0.04; 0.27]; % Target 2 (Repositioned)
-    m3 = [-0.46; -0.04; 0.32]; % Target 3 (Repositioned)
-    m4 = [-0.50; -0.08; 0.28]; % Target 4
-    m5 = [-0.55;  0.00; 0.30]; % Target 5
+    % Reachable targets 
+    m0 = [-0.50;  0.00; 0.30];
+    m1 = [-0.50;  0.08; 0.28];
+    m2 = [-0.52;  0.04; 0.27];
+    m3 = [-0.46; -0.04; 0.32];
+    m4 = [-0.50; -0.08; 0.28];
+    m5 = [-0.55;  0.00; 0.30];
     
-    T_seg = 5.0; % 5 seconds per segment
+    T_seg = 5.0; % seconds per segment
     
     if t < T_seg
         p_start = m0; p_end = m1;
@@ -36,7 +35,7 @@ function [p_d, v_d] = trajectory_planner(t)
         tau = T_seg;
     end
     
-    % Cubic polynomial s(tau) from 0 to 1
+    % Cubic blend from one target to the next.
     if tau <= 0
         s = 0; s_dot = 0;
     elseif tau >= T_seg

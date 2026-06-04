@@ -1,6 +1,4 @@
-% find_initial_configuration.m
-% Finds a q_0 where the tooltip is at m0, and the tool orientation 
-% points directly from the Trocar to m0, guaranteeing the flange is ABOVE.
+% Discover a q_0 where the tooltip starts at m0 and the tool passes through the trocar with the flange above it.
 
 clear; clc;
 
@@ -14,23 +12,23 @@ c_r = [-0.5; 0.0; 0.4];
 m0 = [-0.5; 0.0; 0.3];
 L = 0.15;
 
-% The vector pointing from the Trocar down to the target (direction of tool)
-dir_down = (m0 - c_r) / norm(m0 - c_r); % should be [0; 0; -1]
+% Tool direction from the trocar down to the first target
+dir_down = (m0 - c_r) / norm(m0 - c_r); % expected here: [0; 0; -1]
 
-% Desired flange position (above the trocar)
+% The flange sits one tool length above the tooltip
 p_d = m0 - L * dir_down; % [-0.5; 0.0; 0.45]
 
-% Desired rotation matrix where the 3rd column is z_e = dir_down
+% Rotation chosen so the flange z-axis follows the tool direction
 R_d = [1 0 0;
        0 -1 0;
        0 0 -1];
 
-psi = 0; % elbow parameter
+psi = 0; % elbow parameter for the redundant IK solution
 
-% Analytical Inverse Kinematics
+% Solve with the analytical IK from Phase I
 q = inverse_kinematics(R_d, p_d, psi);
 
-% Verify
+% Check the flange, tool direction, and final tooltip position
 T_e = kuka_direct_kinematics(q);
 p_e_val = T_e(1:3, 4);
 z_e_val = T_e(1:3, 3);

@@ -1,9 +1,7 @@
-% compare_clik_ik.m
-% Compares CLIK and Analytical IK joint trajectories and errors for Phase II
-
+% Scripts to compare the CLICK result with the analytical IK for the same trajectory
 clear; clc; close all;
 
-% Set up paths
+%  Generated kinematics and the Phase I IK solver.
 projectPath = fileparts(pwd);
 workspacePath = fileparts(projectPath);
 addpath(fullfile(projectPath, 'generated'));
@@ -27,12 +25,12 @@ disp('Computing Analytical IK for the same trajectory...');
 q_ik = zeros(length(t), 7);
 c_r = [-0.5; 0.0; 0.4];
 L = 0.15;
-psi = 0; % Elbow parameter
+psi = 0; % elbow parameter used by the analytical IK
 
 for i = 1:length(t)
     [p_d, ~] = trajectory_planner(t(i));
     
-    % Direction vector
+    % Tool direction from the trocar to the current target.
     dir_down = (p_d - c_r) / norm(p_d - c_r);
     p_flange = p_d - L * dir_down;
     
@@ -59,7 +57,6 @@ for i = 1:length(t)
     end
 end
 
-% Plot comparison of Joint 4 (Elbow) and Joint 6 (Wrist)
 h_fig = figure('Name', 'CLIK vs Analytical IK Trajectory', 'Color', 'w', 'Position', [100, 100, 800, 600]);
 
 subplot(2,1,1);
