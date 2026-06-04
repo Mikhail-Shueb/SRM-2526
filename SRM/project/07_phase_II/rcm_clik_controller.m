@@ -1,5 +1,4 @@
 function joint_velocities = rcm_clik_controller(joint_angles, desired_tooltip_pos, desired_tooltip_vel, trocar_pos)
-    %#codegen
     assert(isa(joint_angles, 'double'));
     assert(all(size(joint_angles) == [7, 1]));
     assert(isa(desired_tooltip_pos, 'double'));
@@ -11,23 +10,22 @@ function joint_velocities = rcm_clik_controller(joint_angles, desired_tooltip_po
 
     joint_velocities = zeros(7, 1);
     
-    % Controller Gains
+    % Controller gains
     K_rcm = 10;
     K_tool = 20;
     
-    % 1. Forward Kinematics (Flange Pose and Needle Orientation)
+    % FK for the pose and orientation
     flange_pose = kuka_direct_kinematics(joint_angles);
     flange_pos = flange_pose(1:3, 4);
     flange_rot = flange_pose(1:3, 1:3);
-    needle_direction = flange_rot(:, 3); % Z-axis of the flange points along the needle
+    needle_direction = flange_rot(:, 3); % z-axis of the flange will be the tool direction
     
-    % Flange Jacobians
     jacobian_flange = jacobian_kuka(joint_angles);
     flange_jac_linear = jacobian_flange(1:3, :);
     flange_jac_angular = jacobian_flange(4:6, :);
     
-    % 2. Tool Kinematics (Tooltip Position and Jacobian)
-    needle_length = 0.15; % 15 cm tool
+    % Tooltip position and Jacobian.
+    needle_length = 0.15;
     tooltip_pos = flange_pos + needle_length * needle_direction;
     
     skew_Lz = [0, -needle_length*needle_direction(3), needle_length*needle_direction(2);
@@ -35,7 +33,7 @@ function joint_velocities = rcm_clik_controller(joint_angles, desired_tooltip_po
                -needle_length*needle_direction(2), needle_length*needle_direction(1), 0];
     tooltip_jacobian = flange_jac_linear - skew_Lz * flange_jac_angular;
     
-    % 3. RCM Kinematics (Trocar Constraint Error and Jacobian)
+    % RCM error
     insertion_depth = (trocar_pos - flange_pos)' * needle_direction;
     closest_point_on_shaft = flange_pos + insertion_depth * needle_direction;
     rcm_error = trocar_pos - closest_point_on_shaft;
@@ -44,32 +42,29 @@ function joint_velocities = rcm_clik_controller(joint_angles, desired_tooltip_po
                  insertion_depth*needle_direction(3), 0, -insertion_depth*needle_direction(1);
                  -insertion_depth*needle_direction(2), insertion_depth*needle_direction(1), 0];
     closest_point_jacobian = flange_jac_linear - skew_lamz * flange_jac_angular;
-    
-    % Project Jacobian onto plane orthogonal to needle direction
+
     Proj_ortho = eye(3) - needle_direction * needle_direction';
     rcm_jacobian = Proj_ortho * closest_point_jacobian;
     
-    % 4. Task-Priority Closed-Loop Inverse Kinematics (CLIK)
+    % Task-priority CLIK.
     
-    % Task 1: RCM Trocar Constraint (Highest Priority)
+    % First task: keep the shaft through the trocar
     rcm_jacobian_pinv = pinv(rcm_jacobian);
     joint_vel_rcm = rcm_jacobian_pinv * (K_rcm * rcm_error);
     
-    % Task 2: Tooltip Trajectory Tracking (Secondary Priority)
+    % Second task: follow the tooltip path without breaking the RCM task
     tooltip_error = desired_tooltip_pos - tooltip_pos;
     tooltip_vel_from_rcm = tooltip_jacobian * joint_vel_rcm;
     tooltip_vel_required = desired_tooltip_vel + K_tool * tooltip_error - tooltip_vel_from_rcm;
     
-    % Project tooltip tracking into RCM null-space to guarantee no trocar motion
+    % Project the tooltip correction into the RCM null-space.
     nullspace_projection = eye(7) - rcm_jacobian_pinv * rcm_jacobian;
     tooltip_jacobian_projected = tooltip_jacobian * nullspace_projection;
     
-    % Damped Least Squares for Secondary Task to avoid singularities
     lambda_damp = 0.01;
     tooltip_jacobian_projected_pinv = tooltip_jacobian_projected' / (tooltip_jacobian_projected * tooltip_jacobian_projected' + lambda_damp^2 * eye(3));
     
     joint_vel_tooltip = tooltip_jacobian_projected_pinv * tooltip_vel_required;
     
-    % Combine velocities
     joint_velocities = joint_vel_rcm + joint_vel_tooltip;
 end

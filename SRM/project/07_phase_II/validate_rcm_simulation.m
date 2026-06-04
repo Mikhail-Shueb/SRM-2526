@@ -1,9 +1,8 @@
-% validate_rcm_simulation.m
-% Runs the Surgical RCM Simulink model and plots validation metrics
+% Validations
 
 clear; clc; close all;
 
-% Set up paths
+% Load the generated kinematics and the Phase II
 projectPath = fileparts(pwd);
 workspacePath = fileparts(projectPath);
 addpath(fullfile(projectPath, 'generated'));
@@ -14,19 +13,16 @@ disp('Running Surgical RCM Simulink simulation...');
 simOut = sim('Surgical_RCM_Sim', 'StopTime', '30.0');
 disp('Simulation complete!');
 
-% Extract time and joint data
 t = simOut.tout;
 q_data = simOut.get('q_data');
 
-% If q_data is a timeseries (depending on MATLAB version), extract the data
 if isa(q_data, 'timeseries')
     q_data = q_data.Data;
 end
 
-% Remove singleton dimensions (Simulink array output for vectors is often 7x1xN)
-q_data = squeeze(q_data);
+q_data = squeeze(q_data); % 7x1xN
 
-% Ensure q_data is Nx7 (time x joints)
+% One row per time step
 if size(q_data, 1) ~= length(t) && size(q_data, 2) == length(t)
     q_data = q_data';
 end
@@ -35,26 +31,25 @@ if size(q_data, 1) ~= length(t)
     error('q_data dimension mismatch with time vector t.');
 end
 
-% Parameters
+% Simulation parameters.
 L = 0.15;
 c_r = [-0.5; 0.0; 0.4];
 targets = [
-    -0.5, 0.0, 0.3;   % m0 (Start)
-    -0.5, 0.08, 0.28; % m1
-    -0.52, 0.04, 0.27;% m2 (Repositioned)
-    -0.46, -0.04, 0.32;% m3 (Repositioned)
-    -0.5, -0.08, 0.28;% m4
-    -0.55, 0.0, 0.30  % m5
+    -0.5, 0.0, 0.3;   % m0 start
+    -0.5, 0.08, 0.28;
+    -0.52, 0.04, 0.27;
+    -0.46, -0.04, 0.32;
+    -0.5, -0.08, 0.28;
+    -0.55, 0.0, 0.30  % m5 end
 ];
 
-% Pre-allocate tracking arrays
+% Store pose and error values
 p_e_all = zeros(length(t), 3);
 p_tool_all = zeros(length(t), 3);
 p_d_all = zeros(length(t), 3);
 e_rcm_mag = zeros(length(t), 1);
 e_tool_mag = zeros(length(t), 1);
 
-% Evaluate kinematics over time
 for i = 1:length(t)
     q = q_data(i, :)';
     T_e = kuka_direct_kinematics(q);
@@ -69,62 +64,60 @@ for i = 1:length(t)
     p_c = p_e + lambda * z_e;
     e_rcm_mag(i) = norm(c_r - p_c);
     
-    % Tooltip tracking error
+    % Tooltip tracking error against the planned path.
     [p_d_t, ~] = trajectory_planner(t(i));
     p_d_all(i, :) = p_d_t';
     e_tool_mag(i) = norm(p_d_t - p_tool);
 end
 
-% Plot 1: RCM Error
+% Plot 1: trocar/RCM error
 h_fig1 = figure('Name', 'RCM Constraint Error', 'Color', 'w');
-plot(t, e_rcm_mag * 1000, 'r', 'LineWidth', 2); % Convert to mm
+plot(t, e_rcm_mag * 1000, 'r', 'LineWidth', 2); % convert to mm
 grid on;
 title('Trocar Constraint Error over Time');
 xlabel('Time (s)');
 ylabel('Distance from Trocar Center (mm)');
 
-% Plot 2: 3D Trajectory
+% Plot 2: 3D tooltip trajectory
 h_fig2 = figure('Name', 'Surgical Trajectory', 'Color', 'w');
 hold on; grid on; axis equal; view(3);
 title('Tooltip Trajectory inside the Body');
 xlabel('X'); ylabel('Y'); zlabel('Z');
 
-% Plot the executed path (solid blue)
+% Executed path from the simulation
 plot3(p_tool_all(:,1), p_tool_all(:,2), p_tool_all(:,3), 'b-', 'LineWidth', 2);
 
-% Plot the planned path (dashed red, shifted slightly in Y for side-by-side visualization)
+% Shift the planned path slightly so both curves are visible
 p_d_offset = p_d_all;
 p_d_offset(:, 2) = p_d_offset(:, 2) + 0.003;
 plot3(p_d_offset(:,1), p_d_offset(:,2), p_d_offset(:,3), 'r--', 'LineWidth', 1.5);
 
-% Plot Trocar
+% Trocar marker
 plot3(c_r(1), c_r(2), c_r(3), 'c^', 'MarkerSize', 10, 'MarkerFaceColor', 'c');
 
-% Plot Targets
+% Target markers
 plot3(targets(:,1), targets(:,2), targets(:,3), 'go', 'MarkerSize', 8, 'MarkerFaceColor', 'g');
 
-% Plot Needle Shaft (Orange lines)
-step_size = max(1, floor(length(t) / 20)); % Plot ~20 lines
+% Draw a few needle shafts along the path
+step_size = max(1, floor(length(t) / 20)); % about 20 line
 h_shaft = [];
 for i = 1:step_size:length(t)
     h = plot3([p_e_all(i,1), p_tool_all(i,1)], ...
               [p_e_all(i,2), p_tool_all(i,2)], ...
               [p_e_all(i,3), p_tool_all(i,3)], 'Color', [1 0.5 0], 'LineWidth', 1.5);
     if isempty(h_shaft)
-        h_shaft = h; % Store one handle for the legend
+        h_shaft = h; 
     end
 end
 
 legend('Executed Path', 'Planned Path (offset +3mm Y)', 'Trocar', 'Targets', 'Needle Shaft');
 
-% Save the plots as images
 saveas(h_fig1, 'rcm_error.png');
 saveas(h_fig2, 'trajectory_3d.png');
 disp('Validation plots generated and saved as rcm_error.png and trajectory_3d.png successfully.');
 
-% --- Error Statistics Analysis ---
-% Find indices for target timestamps
-idx_0  = find(t >= 0, 1);
+% Indices for each target time.
+idx_0  = find(t >= 0, 1)
 idx_5  = find(t >= 5, 1);
 idx_10 = find(t >= 10, 1);
 idx_15 = find(t >= 15, 1);
@@ -133,11 +126,10 @@ idx_25 = find(t >= 25, 1);
 idx_30 = find(t >= 30, 1);
 if isempty(idx_30), idx_30 = length(t); end
 
-% Error at specific points (convert to mm)
+% Errors at the target times (mm)
 err_points_rcm = [e_rcm_mag(idx_0); e_rcm_mag(idx_5); e_rcm_mag(idx_10); e_rcm_mag(idx_15); e_rcm_mag(idx_20); e_rcm_mag(idx_25); e_rcm_mag(idx_30)] * 1000;
 err_points_tool = [e_tool_mag(idx_0); e_tool_mag(idx_5); e_tool_mag(idx_10); e_tool_mag(idx_15); e_tool_mag(idx_20); e_tool_mag(idx_25); e_tool_mag(idx_30)] * 1000;
 
-% Print Target Point Errors Table
 fprintf('\n=========================================================\n');
 fprintf('            ERROR MARGIN AT EACH TARGET POINT\n');
 fprintf('=========================================================\n');
@@ -150,7 +142,7 @@ for k = 1:7
 end
 fprintf('=========================================================\n\n');
 
-% Average and max errors in between points (intervals)
+% Average and max errors between points
 intervals = {
     'm0 -> m1', idx_0, idx_5, '[0, 5]';
     'm1 -> m2', idx_5, idx_10, '[5, 10]';
@@ -194,7 +186,6 @@ for k = 1:size(intervals, 1)
 end
 fprintf('=========================================================================================\n\n');
 
-% Write results to a file for Overleaf report copy-pasting
 fid = fopen('error_statistics.txt', 'w');
 if fid ~= -1
     fprintf(fid, 'Target Point Errors Table:\n\n');
