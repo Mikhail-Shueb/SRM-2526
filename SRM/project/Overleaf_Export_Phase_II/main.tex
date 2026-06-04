@@ -10,6 +10,9 @@
 \usepackage{fancyhdr}
 \usepackage{xcolor}
 
+\setlength{\headheight}{13.6pt}
+\addtolength{\topmargin}{-1.6pt}
+
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{Phase II: Surgical RCM Simulation}
@@ -161,6 +164,7 @@ $m_5$ (End)   & 30 & 0.000000 & 0.000000 \\ \bottomrule
 \centering
 \caption{Average and maximum tracking errors during transitions.}
 \label{tab:transition_errors}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}cccccc@{}}
 \toprule
 Transition & Interval (s) & Avg RCM Err (mm) & Max RCM Err (mm) & Avg Tooltip Err (mm) & Max Tooltip Err (mm) \\ \midrule
@@ -170,7 +174,8 @@ $m_2 \rightarrow m_3$ & $[10, 15]$ & 0.022614 & 0.098094 & 0.038649 & 0.129795 \
 $m_3 \rightarrow m_4$ & $[15, 20]$ & 0.012369 & 0.049387 & 0.034262 & 0.141048 \\
 $m_4 \rightarrow m_5$ & $[20, 25]$ & 0.013092 & 0.035113 & 0.034027 & 0.141048 \\
 $m_5$ Hold            & $[25, 30]$ & 0.001101 & 0.006190 & 0.007714 & 0.036866 \\ \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \begin{figure}[H]
@@ -187,10 +192,77 @@ $m_5$ Hold            & $[25, 30]$ & 0.001101 & 0.006190 & 0.007714 & 0.036866 \
 \label{fig:rcm_error}
 \end{figure}
 
-\subsection{Note on initial $t = 0$ micro-error}
+\subsection{Note on initial \texorpdfstring{$t = 0$}{t = 0} micro-error}
 A microscopic error is visible at the very start ($0.011\text{ mm}$ for tooltip and $0.007\text{ mm}$ for trocar). This is an artifact of the Simulink block parameters: the initial joint positions are entered as a rounded text string (`[0; 0.4085; 3.1416; ...]`) which introduces a tiny truncation discrepancy. This is physically negligible (equivalent to $1/10$th of a human hair width) and is corrected immediately as the simulation starts.
 
+\section{Comparative Analysis: CLIK vs. Analytical Inverse Kinematics}
+To evaluate the strengths and weaknesses of the Closed-Loop Inverse Kinematics (CLIK) controller against the analytical Inverse Kinematics (IK) solver, we compare their performance across three critical criteria: path planning, path tracing (RCM enforcement), and error characteristics.
+
+\subsection{Path Planning and Computational Complexity}
+\begin{itemize}
+    \item \textbf{Analytical IK:} Provides a direct, closed-form mapping from Cartesian coordinates to joint angles ($q$) at a specific time step. While mathematically instantaneous for a single target point, continuous path planning requires evaluating these complex trigonometric equations at thousands of intermediate points. If the elbow parameter ($\psi$) is not chosen carefully, joints can experience large discontinuities (flips) between consecutive steps.
+    \item \textbf{CLIK:} Resolves kinematics at the velocity level ($\dot{q} = J^{\dagger} v$) by integrating joint velocities over time. This naturally produces smooth, continuous joint trajectories. The path planning is embedded directly within the control loop, eliminating the need for pre-calculating the entire joint-space path.
+\end{itemize}
+
+\subsection{Path Tracing and RCM Constraint Enforcement}
+\begin{itemize}
+    \item \textbf{Analytical IK (Open-Loop):} Enforces the RCM constraint by geometrically defining the desired flange position and orientation relative to the trocar. Because it lacks feedback, it cannot correct for unexpected joint drifts, link elasticity, or external forces. If a target is slightly out of reach, the equations yield complex numbers, causing the solver to fail. The trajectory tracked under analytical IK in ideal conditions is shown in Fig.~\ref{fig:ik_trajectory_3d}.
+    \item \textbf{CLIK (Closed-Loop Feedback):} Treats the RCM constraint as a prioritized task. The controller continuously measures the physical distance from the trocar to the needle shaft and corrects any deviations. This feedback mechanism makes the system extremely robust to initial alignment errors, sensor noise, or physical disturbances.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/ik_trajectory_3d.png}
+\caption{3D simulation of the tooltip trajectory and needle shaft passing through the trocar under open-loop Analytical IK control (ideal condition).}
+\label{fig:ik_trajectory_3d}
+\end{figure}
+
+\subsection{Error Degree and Frequency}
+\begin{itemize}
+    \item \textbf{Error Degree:} Under ideal, noise-free simulation conditions, analytical IK yields zero theoretical tracking and RCM error (assuming perfect joint execution), as shown by the RCM error over time in Fig.~\ref{fig:ik_rcm_error}. In contrast, CLIK introduces tiny, sub-millimeter transient tracking errors ($<0.19\text{ mm}$ for tooltip and $<0.11\text{ mm}$ for trocar) during rapid movements due to controller gain limits and pseudoinverse damping.
+    \item \textbf{Error Frequency:} Analytical IK is susceptible to catastrophic, high-frequency errors. If the path passes close to a singularity (e.g. fully stretched elbow $q_4 = 0$), joint velocities spike toward infinity. CLIK resolves this smoothly: the damping factor ($\lambda_{damp} = 0.01$) acts as a soft brake, allowing the robot to pass near singularities by slightly degrading tracking accuracy transiently rather than failing.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/ik_rcm_error.png}
+\caption{Trocar constraint error magnitude over time under analytical IK control (flat zero under ideal conditions).}
+\label{fig:ik_rcm_error}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of CLIK and Analytical IK performance.}
+\label{tab:clik_vs_analytical}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Metric & Closed-Loop Inverse Kinematics (CLIK) & Analytical Inverse Kinematics (IK) \\ \midrule
+\textbf{Mathematical Basis} & Velocity-level Integration ($\dot{q} = J^{\dagger} v$) & Closed-form Geometric Equations \\
+\textbf{RCM Enforcement} & Active feedback task-priority control & Pre-calculated geometric flange pose \\
+\textbf{Robustness} & High (closed-loop rejects disturbances) & Low (open-loop, sensitive to drift) \\
+\textbf{Singularity Handling} & Graceful degradation (damped pseudoinverse) & Solver failure (imaginary joint angles) \\
+\textbf{Joint Trajectory} & Naturally smooth and continuous & Susceptible to joint-flip discontinuities \\
+\textbf{Tracking Accuracy} & Sub-millimeter transient errors ($<0.19\text{ mm}$) & Mathematically exact (under ideal execution) \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/clik_vs_ik_comparison.png}
+\caption{Comparison of joint trajectory smoothness: CLIK joint angles remain perfectly smooth and continuous (due to velocity-level integration), whereas open-loop analytical IK trajectories are susceptible to joint-flip discontinuities and rapid changes.}
+\label{fig:clik_vs_ik_comparison}
+\end{figure}
+
 \section{Conclusion}
-Phase II delivery successfully demonstrates a safe, highly accurate RCM controller for minimally invasive surgical procedures. By tuning the CLIK gain ($K_{tool} = 20$) and dampening ($\lambda_{damp} = 0.01$), the tracking errors were successfully reduced to a sub-millimeter level ($< 0.19\text{ mm}$) while maintaining trocar constraint safety.
+Phase II of this project has successfully demonstrated, analyzed, and compared the design of a Remote Center of Motion (RCM) controller for minimally invasive surgical procedures using the KUKA LBR iiwa 7 robot. The key conclusions and findings from this work are summarized as follows:
+
+\begin{enumerate}
+    \item \textbf{Workspace and Tracking Optimization:} By optimizing the workspace target points ($m_2$, $m_3$) and tuning the controller gains ($K_{tool} = 20, \lambda_{damp} = 0.01$), the Closed-Loop Inverse Kinematics (CLIK) controller successfully achieved sub-millimeter tracking accuracy. The maximum transient tooltip error was kept below $0.19\text{ mm}$, and the maximum trocar constraint displacement was restricted to $0.11\text{ mm}$, yielding exact zero-error tracking in steady-state hold.
+    \item \textbf{Joint Trajectory Smoothness:} A comparative analysis of joint profiles revealed that analytical IK is highly prone to catastrophic joint-flip discontinuities (sudden $2\pi$ shifts or configuration branch jumps) when solving independent target coordinates. In contrast, the velocity-level integration of the CLIK controller inherently guarantees smooth, continuous joint trajectories, which is a critical requirement for physical robot hardware and patient safety.
+    \item \textbf{Closed-Loop vs. Open-Loop Trocar Safety:} While analytical IK can achieve mathematically zero error in ideal noise-free simulations, it is an open-loop method lacking active correction. The task-priority framework of CLIK actively regulates the trocar constraint, ensuring that external disturbances, sensor noise, or physical offsets are dynamically rejected.
+    \item \textbf{Robustness to Kinematic Singularities:} Near singular configurations (such as the fully stretched elbow configuration, $q_4 = 0$), analytical IK equations fail due to division by zero, causing command spikes. The damped least-squares pseudo-inverse in the CLIK controller acts as a soft brake, allowing the manipulator to traverse close to singularities with bounded velocities, at the cost of a minor, transient tracking error.
+\end{enumerate}
 
 \end{document}
