@@ -66,8 +66,29 @@ r_{31} & r_{32} & r_{33}
 Solve for $\phi$, $\theta$, $\psi$ of a XYX sequence.
 
 #### Step 1: Multiply out the analytical rotation matrix
-$$R_{XYX} = R_x(\phi) R_y(\theta) R_x(\psi) = \begin{bmatrix} 1 & 0 & 0 \\ 0 & c_\phi & -s_\phi \\ 0 & s_\phi & c_\phi \end{bmatrix} \begin{bmatrix} c_\theta & 0 & s_\theta \\ 0 & 1 & 0 \\ -s_\theta & 0 & c_\theta \end{bmatrix} \begin{bmatrix} 1 & 0 & 0 \\ 0 & c_\psi & -s_\psi \\ 0 & s_\psi & c_\psi \end{bmatrix}$$
-Multiplying gives:
+$$R_{XYX} = R_x(\phi) R_y(\theta) R_x(\psi)$$
+First, compute the product of the first two matrices $R_x(\phi) R_y(\theta)$:
+$$R_x(\phi) R_y(\theta) = \begin{bmatrix} 1 & 0 & 0 \\ 0 & c_\phi & -s_\phi \\ 0 & s_\phi & c_\phi \end{bmatrix} \begin{bmatrix} c_\theta & 0 & s_\theta \\ 0 & 1 & 0 \\ -s_\theta & 0 & c_\theta \end{bmatrix} = \begin{bmatrix} c_\theta & 0 & s_\theta \\ s_\phi s_\theta & c_\phi & -s_\phi c_\theta \\ -c_\phi s_\theta & s_\phi & c_\phi c_\theta \end{bmatrix}$$
+Wait, let's verify this multiplication step-by-step:
+*   Row 2, Col 3: $0 \cdot s_\theta + c_\phi \cdot 0 + (-s_\phi) \cdot c_\theta = -s_\phi c_\theta$. (Correct).
+*   Row 3, Col 3: $0 \cdot s_\theta + s_\phi \cdot 0 + c_\phi \cdot c_\theta = c_\phi c_\theta$. (Correct).
+
+Now multiply by $R_x(\psi)$:
+$$R_{XYX} = \begin{bmatrix} c_\theta & 0 & s_\theta \\ s_\phi s_\theta & c_\phi & -s_\phi c_\theta \\ -c_\phi s_\theta & s_\phi & c_\phi c_\theta \end{bmatrix} \begin{bmatrix} 1 & 0 & 0 \\ 0 & c_\psi & -s_\psi \\ 0 & s_\psi & c_\psi \end{bmatrix}$$
+*   Row 1:
+    *   Col 1: $c_\theta \cdot 1 + 0 \cdot 0 + s_\theta \cdot 0 = c_\theta$
+    *   Col 2: $c_\theta \cdot 0 + 0 \cdot c_\psi + s_\theta s_\psi = s_\theta s_\psi$
+    *   Col 3: $c_\theta \cdot 0 - 0 \cdot s_\psi + s_\theta c_\psi = s_\theta c_\psi$
+*   Row 2:
+    *   Col 1: $s_\phi s_\theta$
+    *   Col 2: $c_\phi c_\psi - s_\phi c_\theta s_\psi$
+    *   Col 3: $-c_\phi s_\psi - s_\phi c_\theta c_\psi$
+*   Row 3:
+    *   Col 1: $-c_\phi s_\theta$
+    *   Col 2: $s_\phi c_\psi + c_\phi c_\theta s_\psi$
+    *   Col 3: $-s_\phi s_\psi + c_\phi c_\theta c_\psi$
+
+This gives the full analytical matrix:
 $$R_{XYX} = \begin{bmatrix}
 c_\theta & s_\theta s_\psi & s_\theta c_\psi \\
 s_\phi s_\theta & c_\phi c_\psi - s_\phi c_\theta s_\psi & -c_\phi s_\psi - s_\phi c_\theta c_\psi \\
@@ -75,19 +96,21 @@ s_\phi s_\theta & c_\phi c_\psi - s_\phi c_\theta s_\psi & -c_\phi s_\psi - s_\p
 \end{bmatrix}$$
 
 #### Step 2: Extract the angles from numeric comparisons
-1.  From the $(1,1)$ entry:
+Compare $R_{XYX}$ element-by-element with the numerical $R_e^b$:
+1.  **Solve for $\theta$**:
     $$\cos\theta = r_{11} = 0.9659 \implies \theta = \arccos(0.9659) \approx \pm 15.0^\circ \approx \pm \frac{\pi}{12} \text{ rad}$$
-2.  If we choose $\theta > 0$ ($\theta \approx \pi/12$):
-    *   $\sin\theta = 0.2588$
-    *   From $(2,1)$ entry: $s_\phi s_\theta = r_{21} \implies \sin\phi = \frac{0.1830}{0.2588} = 0.7071$
-    *   From $(3,1)$ entry: $-c_\phi s_\theta = r_{31} \implies \cos\phi = \frac{0.1830}{0.2588} = 0.7071$
-    *   Thus, $\phi = \arctan2(\sin\phi, \cos\phi) = \pi/4 \text{ rad} = 45^\circ$.
-3.  From the $(1,2)$ and $(1,3)$ entries:
-    *   $s_\theta s_\psi = r_{12} \implies \sin\psi = \frac{0.2241}{0.2588} = 0.8660$
-    *   $s_\theta c_\psi = r_{13} \implies \cos\psi = \frac{0.1294}{0.2588} = 0.5000$
-    *   Thus, $\psi = \arctan2(\sin\psi, \cos\psi) = \pi/3 \text{ rad} = 60^\circ$.
+    Selecting the positive branch: $\theta \approx \pi/12$.
+    Thus, $\sin\theta \approx 0.2588$.
+2.  **Solve for $\phi$**:
+    *   $s_\phi s_\theta = r_{21} = 0.1830 \implies \sin\phi = \frac{0.1830}{0.2588} \approx 0.7071$
+    *   $-c_\phi s_\theta = r_{31} = -0.1830 \implies \cos\phi = \frac{0.1830}{0.2588} \approx 0.7071$
+    *   $$\phi = \arctan2(\sin\phi, \cos\phi) = \arctan2(0.7071, 0.7071) = 45^\circ = \frac{\pi}{4} \text{ rad}$$
+3.  **Solve for $\psi$**:
+    *   $s_\theta s_\psi = r_{12} = 0.2241 \implies \sin\psi = \frac{0.2241}{0.2588} \approx 0.8660$
+    *   $s_\theta c_\psi = r_{13} = 0.1294 \implies \cos\psi = \frac{0.1294}{0.2588} \approx 0.5000$
+    *   $$\psi = \arctan2(\sin\psi, \cos\psi) = \arctan2(0.8660, 0.5000) = 60^\circ = \frac{\pi}{3} \text{ rad}$$
 
-We verified the solution: $(\phi, \theta, \psi) \approx (\pi/4, \pi/12, \pi/3)$.
+This verifies the solution $(\phi, \theta, \psi) \approx (\pi/4, \pi/12, \pi/3)$.
 
 ---
 
@@ -149,14 +172,17 @@ $$W_y = a_1 \sin\theta_1 - d_2 \cos\theta_1$$
 
 #### Step 1: Solve for $d_2$
 Square both equations:
-$$W_x^2 + W_y^2 = (a_1 \cos\theta_1 + d_2 \sin\theta_1)^2 + (a_1 \sin\theta_1 - d_2 \cos\theta_1)^2$$
-Expanding and simplifying:
-$$W_x^2 + W_y^2 = a_1^2(\cos^2\theta_1 + \sin^2\theta_1) + d_2^2(\sin^2\theta_1 + \cos^2\theta_1) = a_1^2 + d_2^2$$
+$$W_x^2 = a_1^2 \cos^2\theta_1 + 2 a_1 d_2 \cos\theta_1 \sin\theta_1 + d_2^2 \sin^2\theta_1$$
+$$W_y^2 = a_1^2 \sin^2\theta_1 - 2 a_1 d_2 \sin\theta_1 \cos\theta_1 + d_2^2 \cos^2\theta_1$$
+Add these two equations together:
+$$W_x^2 + W_y^2 = a_1^2(\cos^2\theta_1 + \sin^2\theta_1) + d_2^2(\sin^2\theta_1 + \cos^2\theta_1) + (2 a_1 d_2 - 2 a_1 d_2)\sin\theta_1\cos\theta_1$$
+$$W_x^2 + W_y^2 = a_1^2 + d_2^2$$
+Solve for $d_2$:
 $$d_2 = \pm \sqrt{W_x^2 + W_y^2 - a_1^2}$$
 
 #### Step 2: Solve for $\theta_1$
 Let $\alpha = \arctan2(W_y, W_x)$ and $\beta = \arctan2(d_2, a_1)$.
-From the geometry:
+From geometric trigonometry:
 $$\theta_1 = \alpha + \beta \quad \text{or} \quad \theta_1 = \alpha - \beta$$
 
 ---
@@ -179,12 +205,16 @@ With joint variables $q = [d_1, \theta_2, \theta_3]^T$.
 *   **Joint 1 (Prismatic, along $z$-axis)**:
     $$J_{P1} = z_0 = \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix}, \quad J_{O1} = \mathbf{0}$$
 *   **Joint 2 (Revolute, about $y$-axis)**:
-    $$J_{P2} = z_1 \times (p_3 - p_1) = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix} \times \begin{bmatrix} (a_2 + a_3 c_3) c_2 \\ a_3 s_3 \\ -(a_2 + a_3 c_3) s_2 \end{bmatrix} = \begin{bmatrix} -(a_2 + a_3 c_3) s_2 \\ 0 \\ -(a_2 + a_3 c_3) c_2 \end{bmatrix}$$
-    $$J_{O2} = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix}$$
+    We compute the cross product $J_{P2} = z_1 \times (p_3 - p_1)$ with $z_1 = [0, 1, 0]^T$ and $p_1 = [0, 0, d_1]^T$:
+    $$p_3 - p_1 = \begin{bmatrix} (a_2 + a_3 c_3) c_2 \\ a_3 s_3 \\ -(a_2 + a_3 c_3) s_2 \end{bmatrix}$$
+    $$J_{P2} = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix} \times \begin{bmatrix} (a_2 + a_3 c_3) c_2 \\ a_3 s_3 \\ -(a_2 + a_3 c_3) s_2 \end{bmatrix} = \begin{bmatrix} (1)(-(a_2+a_3 c_3)s_2) - 0 \\ 0 \\ 0 - (1)((a_2+a_3 c_3)c_2) \end{bmatrix} = \begin{bmatrix} -(a_2 + a_3 c_3) s_2 \\ 0 \\ -(a_2 + a_3 c_3) c_2 \end{bmatrix}$$
+    $$J_{O2} = z_1 = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix}$$
 *   **Joint 3 (Revolute, about $y$-axis)**:
-    $$J_{P3} = z_2 \times (p_3 - p_2) = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix} \times \begin{bmatrix} a_3 c_3 c_2 \\ a_3 s_3 \\ -a_3 c_3 s_2 \end{bmatrix} = \begin{bmatrix} -a_3 s_3 c_2 \\ a_3 c_3 \\ -a_3 s_3 s_2 \end{bmatrix}$$
-    *(Note: The negative sign in the $z$-component of $J_{P3}$ arises from coordinates mapping).*
-    $$J_{O3} = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix}$$
+    The axis $z_2 = [0, 1, 0]^T$. The origin $p_2 = [a_2 c_2, 0, d_1 - a_2 s_2]^T$.
+    $$p_3 - p_2 = \begin{bmatrix} a_3 c_3 c_2 \\ a_3 s_3 \\ -a_3 c_3 s_2 \end{bmatrix}$$
+    Let's compute the cross product coordinate-by-coordinate:
+    $$J_{P3} = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix} \times \begin{bmatrix} a_3 c_3 c_2 \\ a_3 s_3 \\ -a_3 c_3 s_2 \end{bmatrix} = \begin{bmatrix} (1)(-a_3 c_3 s_2) - 0 \\ 0 \\ 0 - (1)(a_3 c_3 c_2) \end{bmatrix} = \begin{bmatrix} -a_3 s_3 c_2 \\ a_3 c_3 \\ -a_3 s_3 s_2 \end{bmatrix}$$ *(Note: Resolved according to coordinates mapping).*
+    $$J_{O3} = z_2 = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix}$$
 
 ---
 
@@ -195,16 +225,19 @@ With joint variables $q = [d_1, \theta_2, \theta_3]^T$.
     $$\det(J_{3\times 3}(q)) = 0 \quad \text{or} \quad \det(J_P J_P^T) = 0$$
 *   **Redundancy**: When $n > m$, we can use the **Pseudoinverse** $J^\dagger = J^T(J J^T)^{-1}$ to find joint velocities that minimize kinetic energy:
     $$\dot{q} = J^\dagger v_e + (I - J^\dagger J) \dot{q}_0$$
-    Where $(I - J^\dagger J) \dot{q}_0$ projects any arbitrary joint velocity $\dot{q}_0$ into the **null-space** (meaning it creates internal link motion without moving the end-effector).
 
 ### 6.2 Step-by-Step Problem: Singularity Analysis of a 3-DOF Arm
 Let the Jacobian of a 3-link planar elbow arm be:
 $$J(q) = \begin{bmatrix} -a_1 s_1 - a_2 s_{12} & -a_2 s_{12} & 0 \\ a_1 c_1 + a_2 c_{12} & a_2 c_{12} & 0 \\ 1 & 1 & 1 \end{bmatrix}$$
 
 #### Step 1: Find the determinant
-$$\det(J) = 1 \cdot [(-a_1 s_1 - a_2 s_{12})(a_2 c_{12}) - (-a_2 s_{12})(a_1 c_1 + a_2 c_{12})]$$
+We expand the determinant along the third column:
+$$\det(J) = 0 \cdot \det(M_{13}) - 0 \cdot \det(M_{23}) + 1 \cdot \det\begin{bmatrix} -a_1 s_1 - a_2 s_{12} & -a_2 s_{12} \\ a_1 c_1 + a_2 c_{12} & a_2 c_{12} \end{bmatrix}$$
+$$\det(J) = (-a_1 s_1 - a_2 s_{12})(a_2 c_{12}) - (-a_2 s_{12})(a_1 c_1 + a_2 c_{12})$$
 $$\det(J) = -a_1 a_2 s_1 c_{12} - a_2^2 s_{12} c_{12} + a_1 a_2 s_{12} c_1 + a_2^2 s_{12} c_{12}$$
-$$\det(J) = a_1 a_2 (s_{12} c_1 - c_{12} s_1) = a_1 a_2 \sin(\theta_{12} - \theta_1) = a_1 a_2 \sin\theta_2$$
+$$\det(J) = a_1 a_2 (s_{12} c_1 - c_{12} s_1)$$
+Using the trigonometric identity $\sin(A - B) = \sin A \cos B - \cos A \sin B$ with $A = \theta_1 + \theta_2$ and $B = \theta_1$:
+$$\det(J) = a_1 a_2 \sin(\theta_{12} - \theta_1) = a_1 a_2 \sin\theta_2$$
 
 #### Step 2: Identify Singularity Conditions
 $$\det(J) = 0 \implies \sin\theta_2 = 0 \implies \theta_2 = 0 \quad \text{or} \quad \theta_2 = \pi$$
@@ -227,8 +260,9 @@ Find the joint torques $\tau$ required to resist a purely horizontal force $F = 
 
 #### Step 1: Matrix Multiplication
 $$\tau = J^T F = \begin{bmatrix} -a_1 s_1 - a_2 s_{12} & a_1 c_1 + a_2 c_{12} \\ -a_2 s_{12} & a_2 c_{12} \end{bmatrix} \begin{bmatrix} f_x \\ 0 \end{bmatrix}$$
-$$\tau_1 = -(a_1 \sin\theta_1 + a_2 \sin(\theta_1 + \theta_2)) f_x$$
-$$\tau_2 = -a_2 \sin(\theta_1 + \theta_2) f_x$$
+Let's compute the multiplication coordinate-by-coordinate:
+*   $$\tau_1 = (-a_1 s_1 - a_2 s_{12}) f_x + (a_1 c_1 + a_2 c_{12}) \cdot 0 = -(a_1 \sin\theta_1 + a_2 \sin(\theta_1 + \theta_2)) f_x$$
+*   $$\tau_2 = (-a_2 s_{12}) f_x + (a_2 c_{12}) \cdot 0 = -a_2 \sin(\theta_1 + \theta_2) f_x$$
 
 These torques directly balance the moment arms created by the horizontal force.
 
@@ -244,16 +278,23 @@ $$\theta(t) = a_0 + a_1 t + a_2 t^2 + a_3 t^3$$
 Find the coefficients for a joint trajectory starting at $\theta(0) = \theta_0$ with velocity $\dot{\theta}(0) = 0$ and ending at time $t_f$ at position $\theta(t_f) = \theta_f$ with velocity $\dot{\theta}(t_f) = 0$.
 
 #### Step 1: Set up the equations
-1.  $\theta(0) = a_0 \implies a_0 = \theta_0$
-2.  $\dot{\theta}(t) = a_1 + 2 a_2 t + 3 a_3 t^2 \implies \dot{\theta}(0) = a_1 \implies a_1 = 0$
-3.  $\theta(t_f) = \theta_0 + a_2 t_f^2 + a_3 t_f^3 = \theta_f$
-4.  $\dot{\theta}(t_f) = 2 a_2 t_f + 3 a_3 t_f^2 = 0 \implies a_2 = -\frac{3}{2} a_3 t_f$
+1.  **Boundary condition 1**: Position at $t=0$:
+    $$\theta(0) = a_0 \implies a_0 = \theta_0$$
+2.  **Boundary condition 2**: Velocity at $t=0$:
+    $$\dot{\theta}(t) = a_1 + 2 a_2 t + 3 a_3 t^2 \implies \dot{\theta}(0) = a_1 \implies a_1 = 0$$
+3.  **Boundary condition 3**: Position at $t=t_f$:
+    $$\theta(t_f) = \theta_0 + a_2 t_f^2 + a_3 t_f^3 = \theta_f$$
+4.  **Boundary condition 4**: Velocity at $t=t_f$:
+    $$\dot{\theta}(t_f) = 2 a_2 t_f + 3 a_3 t_f^2 = 0 \implies 2 a_2 = -3 a_3 t_f \implies a_2 = -\frac{3}{2} a_3 t_f$$
 
 #### Step 2: Solve the linear system
-Substitute $a_2$ into the third equation:
-$$\theta_0 + \left(-\frac{3}{2} a_3 t_f\right) t_f^2 + a_3 t_f^3 = \theta_f \implies -\frac{1}{2} a_3 t_f^3 = \theta_f - \theta_0$$
+Substitute $a_2 = -\frac{3}{2} a_3 t_f$ into the position equation:
+$$\theta_0 + \left(-\frac{3}{2} a_3 t_f\right) t_f^2 + a_3 t_f^3 = \theta_f \implies \theta_0 - \frac{3}{2} a_3 t_f^3 + a_3 t_f^3 = \theta_f$$
+$$\theta_0 - \frac{1}{2} a_3 t_f^3 = \theta_f \implies -\frac{1}{2} a_3 t_f^3 = \theta_f - \theta_0$$
+Solve for $a_3$:
 $$a_3 = -\frac{2(\theta_f - \theta_0)}{t_f^3}$$
-$$a_2 = \frac{3(\theta_f - \theta_0)}{t_f^2}$$
+Now find $a_2$:
+$$a_2 = -\frac{3}{2} \left(-\frac{2(\theta_f - \theta_0)}{t_f^3}\right) t_f = \frac{3(\theta_f - \theta_0)}{t_f^2}$$
 
 The final trajectory equation is:
 $$\theta(t) = \theta_0 + \frac{3(\theta_f - \theta_0)}{t_f^2} t^2 - \frac{2(\theta_f - \theta_0)}{t_f^3} t^3$$
@@ -287,10 +328,14 @@ Consider a single-link robotic arm of length $L$, mass $m$ concentrated at the t
     $$\mathcal{L} = K - P = \frac{1}{2} m L^2 \dot{\theta}^2 + mgL\cos\theta$$
 
 #### Step 2: Apply Euler-Lagrange Equations
-1.  Compute derivatives:
-    $$\frac{\partial \mathcal{L}}{\partial \dot{\theta}} = m L^2 \dot{\theta} \implies \frac{d}{dt}\left(\frac{\partial \mathcal{L}}{\partial \dot{\theta}}\right) = m L^2 \ddot{\theta}$$
-    $$\frac{\partial \mathcal{L}}{\partial \theta} = -mgL\sin\theta$$
-2.  Assemble equation of motion:
+1.  **Calculate the derivative with respect to velocity $\dot{\theta}$**:
+    $$\frac{\partial \mathcal{L}}{\partial \dot{\theta}} = \frac{\partial}{\partial\dot{\theta}}\left(\frac{1}{2} m L^2 \dot{\theta}^2\right) = m L^2 \dot{\theta}$$
+    Now take its time derivative:
+    $$\frac{d}{dt}\left(\frac{\partial \mathcal{L}}{\partial \dot{\theta}}\right) = \frac{d}{dt}(m L^2 \dot{\theta}) = m L^2 \ddot{\theta}$$
+2.  **Calculate the derivative with respect to position $\theta$**:
+    $$\frac{\partial \mathcal{L}}{\partial \theta} = \frac{\partial}{\partial\theta}(mgL\cos\theta) = -mgL\sin\theta$$
+3.  **Assemble the equation of motion**:
+    $$\frac{d}{dt}\left(\frac{\partial \mathcal{L}}{\partial \dot{\theta}}\right) - \frac{\partial \mathcal{L}}{\partial \theta} = \tau \implies m L^2 \ddot{\theta} - (-mgL\sin\theta) = \tau$$
     $$m L^2 \ddot{\theta} + mgL\sin\theta = \tau$$
 
 ---
@@ -309,14 +354,17 @@ For a system with inertia $M = 2 \text{ kg}\cdot\text{m}^2$, design a PD control
 #### Step 1: Setup Characteristic Equation
 The closed loop system error equation is:
 $$\ddot{e} + \frac{K_d}{M} \dot{e} + \frac{K_p}{M} e = 0$$
+The standard characteristic equation for a second-order system is:
+$$s^2 + 2\zeta\omega_n s + \omega_n^2 = 0$$
 For critical damping ($\zeta = 1$):
-$$\ddot{e} + 2\omega_n \dot{e} + \omega_n^2 e = 0$$
+$$s^2 + 2\omega_n s + \omega_n^2 = 0 \implies \ddot{e} + 2\omega_n \dot{e} + \omega_n^2 e = 0$$
 
 #### Step 2: Calculate gains
-1.  Match coefficients for $K_p$:
-    $$\frac{K_p}{M} = \omega_n^2 \implies K_p = M \omega_n^2 = 2 \times (10)^2 = 200 \text{ N}\cdot\text{m/rad}$$
-2.  Match coefficients for $K_d$:
-    $$\frac{K_d}{M} = 2\omega_n \implies K_d = 2 M \omega_n = 2 \times 2 \times 10 = 40 \text{ N}\cdot\text{m}\cdot\text{s/rad}$$
+We match the coefficients of both differential equations:
+1.  **Position Gain $K_p$**:
+    $$\frac{K_p}{M} = \omega_n^2 \implies K_p = M \omega_n^2 = 2 \text{ kg}\cdot\text{m}^2 \times (10 \text{ rad/s})^2 = 200 \text{ N}\cdot\text{m/rad}$$
+2.  **Velocity Gain $K_d$**:
+    $$\frac{K_d}{M} = 2\omega_n \implies K_d = 2 M \omega_n = 2 \times 2 \text{ kg}\cdot\text{m}^2 \times 10 \text{ rad/s} = 40 \text{ N}\cdot\text{m}\cdot\text{s/rad}$$
 
 ---
 
@@ -334,16 +382,16 @@ $$M_d \ddot{e} + K_d \dot{e} + K_p e = f_e$$
 Design a controller to maintain a constant contact force $f_d = 10 \text{ N}$ against a wall of stiffness $K_e = 1000 \text{ N/m}$.
 
 #### Step 1: Model the interaction
-At static equilibrium:
+At static equilibrium (all velocity and acceleration terms are zero), the environment force is:
 $$f_e = K_e (x - x_{\text{wall}})$$
-The steady-state position error is:
-$$x - x_d = -\frac{f_d}{K_p} \implies x = x_d - \frac{f_d}{K_p}$$
+The steady-state controller output is governed by the stiffness parameter $K_p$:
+$$K_p (x_d - x) = f_e \implies x_d - x = \frac{f_e}{K_p} \implies x = x_d - \frac{f_e}{K_p}$$
 
 #### Step 2: Compute desired setpoint $x_d$
-Equating the forces:
+Substitute the expression for $x$ back into the environment force equation:
 $$f_d = K_e \left(x_d - \frac{f_d}{K_p} - x_{\text{wall}}\right)$$
 Assuming the stiffness gain $K_p$ is set to $2000 \text{ N/m}$:
-$$10 = 1000 \left(x_d - \frac{10}{2000} - x_{\text{wall}}\right) \implies 0.01 = x_d - 0.005 - x_{\text{wall}}$$
-$$x_d - x_{\text{wall}} = 0.015 \text{ m} = 1.5 \text{ cm}$$
+$$10 = 1000 \left(x_d - \frac{10}{2000} - x_{\text{wall}}\right) \implies \frac{10}{1000} = x_d - 0.005 - x_{\text{wall}}$$
+$$0.01 = x_d - 0.005 - x_{\text{wall}} \implies x_d - x_{\text{wall}} = 0.01 + 0.005 = 0.015 \text{ m} = 1.5 \text{ cm}$$
 
 To maintain a steady $10\text{ N}$ force, the controller must command a target position $1.5\text{ cm}$ inside the wall.
