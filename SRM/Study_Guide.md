@@ -61,7 +61,7 @@ where $z_{i-1}^0$ is the unit vector of axis $z_{i-1}$ expressed in frame 0 (whi
 ### Problema 1: 4-DOF Planar Manipulator (DH & Null-Space)
 Consider the planar robot manipulator shown in Figure P1 of the exam sheet. It has joints: revolute $\vartheta_1$, prismatic $d_2$, revolute $\vartheta_3$, and revolute $\vartheta_4$.
 
-![Figure P1](file:///c:/Users/shueb/OneDrive/Documentos/SRM/SRM-2526/SRM/Fig_P1.png)
+![Figure P1](Fig_P1.png)
 
 ```
          (Joint 4, theta_4)
@@ -130,7 +130,7 @@ As joint 1 rotates ($\vartheta_1$), the prismatic joint $d_2$ changes length so 
 ### Problema 2: 3D Manipulator Direct Kinematics & Jacobian
 Consider the manipulator in Figure P2. The DH table is given:
 
-![Figure P2](file:///c:/Users/shueb/OneDrive/Documentos/SRM/SRM-2526/SRM/Fig_P2.png)
+![Figure P2](Fig_P2.png)
 
 | $i$ | $d_i$ | $\vartheta_i$ | $a_i$ | $\alpha_i$ |
 | :--- | :--- | :--- | :--- | :--- |
@@ -228,7 +228,7 @@ $$J = \begin{bmatrix}
 #### Reference Solution Visual Aid (Handwritten Solutions Page 1)
 Below is the scan of the official handwritten solution for Problems 1 and 2 of this exam:
 
-![Handwritten Solution for Problems 1 & 2](file:///c:/Users/shueb/OneDrive/Documentos/SRM/SRM-2526/SRM/Sol_P1_P2.png)
+![Handwritten Solution for Problems 1 & 2](Sol_P1_P2.png)
 
 ---
 
@@ -322,7 +322,7 @@ To find the displacement curve $s(t)$, we integrate $\dot{s}(t)$ segment-by-segm
 #### Reference Solution Visual Aid (Handwritten Solutions Page 2)
 Below is the scan of the official handwritten solution for Problems 3 and 4 of this exam:
 
-![Handwritten Solution for Problems 3 & 4](file:///c:/Users/shueb/OneDrive/Documentos/SRM/SRM-2526/SRM/Sol_P3_P4.png)
+![Handwritten Solution for Problems 3 & 4](Sol_P3_P4.png)
 
 ---
 
@@ -476,6 +476,8 @@ $$2\ell = \frac{\dot{s}_{\max} t_f}{2} \implies t_f = \frac{4\ell}{\dot{s}_{\max
 ## 4. Exam 2022/2023 - First Exam (1º Exame)
 
 ### Problema 1: 4-DOF Manipulator (DH & Null-Space)
+![Figure P1](Fig_2223_E1_P1.png)
+
 #### a) DH Parameters Table
 For the manipulator in Fig. P1:
 
@@ -505,6 +507,8 @@ As it moves, the prismatic joints $d_1$ and $d_3$ adjust their lengths to keep t
 ---
 
 ### Problema 2: 3-DOF Spatial Manipulator (Direct Kinematics & Jacobian)
+![Figure P2](Fig_2223_E1_P2.png)
+
 #### a) Direct Kinematics ($R_3^0$ and $p_3$)
 Using the DH table provided in Figure P2:
 *   $R_1^0 = I_3$ (identity)
@@ -535,6 +539,11 @@ With $q = [d_1, \vartheta_2, d_3]^T$:
 3.  **Column 3 (Prismatic $d_3$)**:
     *   $J_{P3} = z_2 = z_3 = [-s_2, c_2, 0]^T$
     *   $J_{O3} = \mathbf{0} = [0, 0, 0]^T$
+
+#### Reference Solution Visual Aid (Handwritten Solutions Page 1)
+Below is the scan of the official handwritten solution for Problems 1 and 2 of this exam:
+
+![Handwritten Solution for Problems 1 & 2](Sol_2223_E1_P1_P2.png)
 
 ---
 
@@ -598,6 +607,11 @@ $$s(t) = s_0 + 3(s_f - s_0)\left(\frac{t}{t_f}\right)^2 - 2(s_f - s_0)\left(\fra
     $$t_f = \frac{3(s_f - s_0)}{2 \dot{s}_{\max}}$$
     With $s_f - s_0 = 3 + \pi$:
     $$t_f = \frac{3(3 + \pi)}{2 \dot{s}_{\max}}$$
+
+#### Reference Solution Visual Aid (Handwritten Solutions Page 2)
+Below is the scan of the official handwritten solution for Problems 3 and 4 of this exam:
+
+![Handwritten Solution for Problems 3 & 4](Sol_2223_E1_P3_P4.png)
 
 ---
 
