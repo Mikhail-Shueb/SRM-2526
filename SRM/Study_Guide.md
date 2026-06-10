@@ -97,10 +97,33 @@ The resulting DH Parameter Table is:
 | **3** | $0$ | $\vartheta_3$ (Var) | $a_3$ | $0$ |
 | **4** | $0$ | $\vartheta_4$ (Var) | $a_4$ | $0$ |
 
-> [!NOTE]
-> **Why $\alpha_1 = \pi/2$ and $\alpha_2 = -\pi/2$?**
-> *   Joint 1 has a horizontal rotation axis ($z_0$). Joint 2 slides along the post ($z_1$, vertical). The angle between $z_0$ and $z_1$ is $90^\circ$ ($\pi/2$), which is the twist $\alpha_1$.
-> *   Joint 3 has a horizontal axis ($z_2$), perpendicular to the post ($z_1$). The twist $\alpha_2 = -\pi/2$ rotates the $z$-axis back to horizontal.
+#### Step-by-Step Parameter Derivation (How each value is obtained)
+
+Here is the detailed explanation for each row and column in the DH table based on **Figure P1**:
+
+*   **Link 1 (Row 1 - Joint 1)**:
+    *   $d_1 = 0$: The distance along $z_0$ (which points horizontally out of the page) from the base origin $O_0$ to the intersection of $z_0$ with the common normal $x_1$ is $0$, because the vertical axis $x_1$ intersects the horizontal axis $z_0$ exactly at the base origin $O_0$.
+    *   $\vartheta_1$ (Variable): Joint 1 is a revolute joint, so the angle around the $z_0$ axis from the reference axis $x_0$ to $x_1$ is the active joint variable $\vartheta_1$.
+    *   $a_1$: The distance along $x_1$ (which points vertically up along the first link/post) from the base origin $O_0$ to the top of the post $O_1$ is the physical height of the first vertical post ($a_1$).
+    *   $\alpha_1 = \pi/2$: The twist angle around $x_1$ (vertical, up) to align the $z_0$ axis (out of the page) with the $z_1$ axis (pointing to the right along the sliding guide). Using the right-hand rule with the thumb pointing up along $x_1$, a $+90^\circ$ ($\pi/2$ rad) counterclockwise rotation aligns them.
+
+*   **Link 2 (Row 2 - Joint 2)**:
+    *   $d_2$ (Variable): Joint 2 is a prismatic joint sliding along the guide. The distance along $z_1$ (pointing to the right along the guide) from $O_1$ to the intersection with $x_2$ (vertical, pointing up at the collar) is the variable sliding displacement $d_2$.
+    *   $\vartheta_2 = 0$: Since Joint 2 is prismatic and does not rotate, the angle of rotation around $z_1$ to align $x_1$ (vertical, up) with $x_2$ (vertical, up) is fixed at $0$.
+    *   $a_2 = 0$: The distance along $x_2$ from the intersection of $z_1$ and $x_2$ (which is at the collar $O_2$) to $O_2$ is $0$, because the origin of frame 2 is placed directly on the guide.
+    *   $\alpha_2 = -\pi/2$: The twist angle around $x_2$ (vertical, up) to align $z_1$ (pointing to the right) with the axis of Joint 3 ($z_2$, pointing out of the page). Using the right-hand rule with the thumb pointing up along $x_2$, a clockwise rotation of $90^\circ$ ($-\pi/2$ rad) aligns them.
+
+*   **Link 3 (Row 3 - Joint 3)**:
+    *   $d_3 = 0$: The distance along the $z_2$ axis (out of the page) from $O_2$ to the intersection with $x_3$ is $0$, as there is no offset along this horizontal joint axis.
+    *   $\vartheta_3$ (Variable): Joint 3 is a revolute joint, so the angle around the $z_2$ axis from $x_2$ to $x_3$ is the active joint variable $\vartheta_3$.
+    *   $a_3$: The distance along $x_3$ (which points along the link connecting Joint 3 and Joint 4) from Joint 3 to Joint 4 is the physical length of the vertical link 2 ($a_3$).
+    *   $\alpha_3 = 0$: The axes of Joint 3 ($z_2$) and Joint 4 ($z_3$) are parallel (both point out of the page), so no twist is needed ($\alpha_3 = 0$).
+
+*   **Link 4 (Row 4 - Joint 4)**:
+    *   $d_4 = 0$: No offset along the $z_3$ axis, so $d_4 = 0$.
+    *   $\vartheta_4$ (Variable): Joint 4 is a revolute joint, so the angle around the $z_3$ axis from $x_3$ to $x_4$ is the active joint variable $\vartheta_4$.
+    *   $a_4$: The distance along $x_4$ (pointing horizontally to the right along the third link) from Joint 4 to the end-effector tip is the physical length of link 3 ($a_4$).
+    *   $\alpha_4 = 0$: The end-effector axis $z_4$ is parallel to $z_3$ (both point out of the page), so no twist is needed ($\alpha_4 = 0$).
 
 #### b) Null-Space Motion Sketch
 A redundant manipulator has more degrees of freedom than required to specify the task. For a planar task, 3 DOFs are needed. Since this manipulator has 4 DOFs ($\vartheta_1, d_2, \vartheta_3, \vartheta_4$), it is redundant.
