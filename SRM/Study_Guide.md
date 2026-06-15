@@ -164,48 +164,77 @@ Consider the manipulator in Figure P2. The DH table is given:
 
 #### a) Determine Direct Kinematics ($R_4^0$ and $p_4$)
 ##### 1. Orientation Matrix $R_4^0$
-Using the DH parameters, we compute the individual rotation matrices:
-*   For link 1: $\alpha_1 = \pi/2, \vartheta_1 = 0 \implies R_1^0 = R_x(\pi/2) = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix}$
-*   For link 2: $R_2^1 = I_3$ (identity matrix, since $\vartheta_2 = 0, \alpha_2 = 0$)
-*   For link 3: $\alpha_3 = -\pi/2, \vartheta_3$ is variable. The rotation is around the horizontal $y_3$-axis (which is parallel to $y_0$). Thus:
-    $$R_3^2 = R_y(\vartheta_3) = \begin{bmatrix} \cos\vartheta_3 & 0 & -\sin\vartheta_3 \\ 0 & 1 & 0 \\ \sin\vartheta_3 & 0 & \cos\vartheta_3 \end{bmatrix}$$
-*   For link 4: $\alpha_4 = 0, \vartheta_4$ is variable. This is a standard rotation around the $z$-axis:
-    $$R_4^3 = R_z(\vartheta_4) = \begin{bmatrix} \cos\vartheta_4 & -\sin\vartheta_4 & 0 \\ \sin\vartheta_4 & \cos\vartheta_4 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$
+Using the DH parameters, we compute the individual rotation matrices $R_i^{i-1}$ using the standard formula $R_i^{i-1} = R_z(\vartheta_i) R_x(\alpha_i)$:
+
+*   **For Link 1** ($\vartheta_1 = 0$, $\alpha_1 = \pi/2$):
+    $$R_1^0 = R_z(0) R_x(\pi/2) = I_3 \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix}$$
+*   **For Link 2** ($\vartheta_2 = 0$, $\alpha_2 = 0$):
+    $$R_2^1 = R_z(0) R_x(0) = I_3 = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$
+*   **For Link 3** ($\vartheta_3$ is variable, $\alpha_3 = -\pi/2$):
+    $$R_3^2 = R_z(\vartheta_3) R_x(-\pi/2) = \begin{bmatrix} \cos\vartheta_3 & -\sin\vartheta_3 & 0 \\ \sin\vartheta_3 & \cos\vartheta_3 & 0 \\ 0 & 0 & 1 \end{bmatrix} \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & 1 \\ 0 & -1 & 0 \end{bmatrix} = \begin{bmatrix} \cos\vartheta_3 & 0 & -\sin\vartheta_3 \\ \sin\vartheta_3 & 0 & \cos\vartheta_3 \\ 0 & -1 & 0 \end{bmatrix}$$
+*   **For Link 4** ($\vartheta_4$ is variable, $\alpha_4 = 0$):
+    $$R_4^3 = R_z(\vartheta_4) R_x(0) = \begin{bmatrix} \cos\vartheta_4 & -\sin\vartheta_4 & 0 \\ \sin\vartheta_4 & \cos\vartheta_4 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$
 
 Now multiply them sequentially step-by-step:
-1.  **First step: Multiply $R_1^0 R_2^1$**
+
+1.  **First step: Multiply $R_1^0 R_2^1$ to get $R_2^0$**
     $$R_2^0 = R_1^0 \cdot I_3 = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix}$$
 2.  **Second step: Multiply $R_2^0 R_3^2$ to get $R_3^0$**
-    $$R_3^0 = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} c_3 & 0 & -s_3 \\ 0 & 1 & 0 \\ s_3 & 0 & c_3 \end{bmatrix}$$
-    Let's calculate each element:
-    *   Row 1: $[1, 0, 0] \times [c_3, 0, s_3]^T = c_3$; $[1, 0, 0] \times [0, 1, 0]^T = 0$; $[1, 0, 0] \times [-s_3, 0, c_3]^T = -s_3$.
-    *   Row 2: $[0, 0, -1] \times [c_3, 0, s_3]^T = -s_3$; $[0, 0, -1] \times [0, 1, 0]^T = 0$; $[0, 0, -1] \times [-s_3, 0, c_3]^T = -c_3$.
-    *   Row 3: $[0, 1, 0] \times [c_3, 0, s_3]^T = 0$; $[0, 1, 0] \times [0, 1, 0]^T = 1$; $[0, 1, 0] \times [-s_3, 0, c_3]^T = 0$.
-    *   *Correction Note*: In accordance with the course's exam solution frame conventions, $R_3^0$ is defined directly as the rotation around $y_3$:
+    $$R_3^0 = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} c_3 & 0 & -s_3 \\ s_3 & 0 & c_3 \\ 0 & -1 & 0 \end{bmatrix}$$
+    Let's compute each column of the resulting matrix $R_3^0$ step-by-step:
+    *   **Column 1**:
+        $$\begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} c_3 \\ s_3 \\ 0 \end{bmatrix} = \begin{bmatrix} (1)(c_3) + (0)(s_3) + (0)(0) \\ (0)(c_3) + (0)(s_3) + (-1)(0) \\ (0)(c_3) + (1)(s_3) + (0)(0) \end{bmatrix} = \begin{bmatrix} c_3 \\ 0 \\ s_3 \end{bmatrix}$$
+    *   **Column 2**:
+        $$\begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} 0 \\ 0 \\ -1 \end{bmatrix} = \begin{bmatrix} (1)(0) + (0)(0) + (0)(-1) \\ (0)(0) + (0)(0) + (-1)(-1) \\ (0)(0) + (1)(0) + (0)(-1) \end{bmatrix} = \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix}$$
+    *   **Column 3**:
+        $$\begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} -s_3 \\ c_3 \\ 0 \end{bmatrix} = \begin{bmatrix} (1)(-s_3) + (0)(c_3) + (0)(0) \\ (0)(-s_3) + (0)(c_3) + (-1)(0) \\ (0)(-s_3) + (1)(c_3) + (0)(0) \end{bmatrix} = \begin{bmatrix} -s_3 \\ 0 \\ c_3 \end{bmatrix}$$
+    *   This gives:
         $$R_3^0 = \begin{bmatrix} c_3 & 0 & -s_3 \\ 0 & 1 & 0 \\ s_3 & 0 & c_3 \end{bmatrix}$$
+    *   *Alternative Geometric Method (as shown in the official handwritten solution)*:
+        Since Joint 1 and Joint 2 are prismatic (no rotation), the orientation of Frame 2 remains fixed relative to Frame 0. The first rotation occurs at Joint 3 around the horizontal axis $y_0$ (pointing out of the page). Thus, Frame 3 is rotated relative to Frame 0 by $\vartheta_3$ around the $y$-axis:
+        $$R_3^0 = R_y(\vartheta_3) = \begin{bmatrix} \cos\vartheta_3 & 0 & -\sin\vartheta_3 \\ 0 & 1 & 0 \\ \sin\vartheta_3 & 0 & \cos\vartheta_3 \end{bmatrix}$$
+        
+        **How this specific matrix is derived (Geometric & Sign Swap Analysis)**:
+        *   **Geometric Projection**: The rotation matrix columns represent the unit vectors of Frame 3 ($\mathbf{x}_3, \mathbf{y}_3, \mathbf{z}_3$) projected onto Frame 0 ($\mathbf{x}_0, \mathbf{y}_0, \mathbf{z}_0$).
+            *   $\mathbf{y}_3$ is parallel to $\mathbf{y}_0$ (pointing out of the page), so its column is $[0, 1, 0]^T$.
+            *   As Joint 3 rotates by $\vartheta_3$, $\mathbf{x}_3$ tilts upwards towards $+\mathbf{z}_0$, giving $\mathbf{x}_3^0 = [\cos\vartheta_3, 0, \sin\vartheta_3]^T$.
+            *   Simultaneously, $\mathbf{z}_3$ tilts leftwards towards $-\mathbf{x}_0$, giving $\mathbf{z}_3^0 = [-\sin\vartheta_3, 0, \cos\vartheta_3]^T$.
+            *   Putting these columns together yields the matrix.
+        *   **Right-Hand Rule Sign Swap**: The standard rotation matrix around the $y$-axis has the negative sign on the bottom-left ($-\sin\beta$) because standard coordinates assume the $+y$-axis points *into* the page. Here, $+\mathbf{y}_0$ points *out of* the page. By the right-hand rule, this reverses the positive rotation direction (now going from $+\mathbf{x}_0$ to $+\mathbf{z}_0$), which swaps the signs of the $\sin\vartheta_3$ terms (effectively replacing $\beta$ with $-\beta$).
+        
+        Both the standard DH multiplication and the direct geometric interpretation are 100% equivalent.
+
 3.  **Third step: Multiply $R_3^0 R_4^3$ to get $R_4^0$**
     $$R_4^0 = \begin{bmatrix} c_3 & 0 & -s_3 \\ 0 & 1 & 0 \\ s_3 & 0 & c_3 \end{bmatrix} \begin{bmatrix} c_4 & -s_4 & 0 \\ s_4 & c_4 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$
     *   Row 1:
-        *   Col 1: $c_3 c_4 + 0 \cdot s_4 - s_3 \cdot 0 = c_3 c_4$
-        *   Col 2: $c_3 (-s_4) + 0 \cdot c_4 - s_3 \cdot 0 = -c_3 s_4$
-        *   Col 3: $c_3 \cdot 0 + 0 \cdot 0 - s_3 \cdot 1 = -s_3$
+        *   Col 1: $(c_3)(c_4) + (0)(s_4) + (-s_3)(0) = c_3 c_4$
+        *   Col 2: $(c_3)(-s_4) + (0)(c_4) + (-s_3)(0) = -c_3 s_4$
+        *   Col 3: $(c_3)(0) + (0)(0) + (-s_3)(1) = -s_3$
     *   Row 2:
-        *   Col 1: $0 \cdot c_4 + 1 \cdot s_4 + 0 \cdot 0 = s_4$
-        *   Col 2: $0 \cdot (-s_4) + 1 \cdot c_4 + 0 \cdot 0 = c_4$
-        *   Col 3: $0 \cdot 0 + 1 \cdot 0 + 0 \cdot 1 = 0$
+        *   Col 1: $(0)(c_4) + (1)(s_4) + (0)(0) = s_4$
+        *   Col 2: $(0)(-s_4) + (1)(c_4) + (0)(0) = c_4$
+        *   Col 3: $(0)(0) + (1)(0) + (0)(1) = 0$
     *   Row 3:
-        *   Col 1: $s_3 c_4 + 0 \cdot s_4 + c_3 \cdot 0 = s_3 c_4$
-        *   Col 2: $s_3 (-s_4) + 0 \cdot c_4 + c_3 \cdot 0 = -s_3 s_4$
-        *   Col 3: $s_3 \cdot 0 + 0 \cdot 0 + c_3 \cdot 1 = c_3$
+        *   Col 1: $(s_3)(c_4) + (0)(s_4) + (c_3)(0) = s_3 c_4$
+        *   Col 2: $(s_3)(-s_4) + (0)(c_4) + (c_3)(0) = -s_3 s_4$
+        *   Col 3: $(s_3)(0) + (0)(0) + (c_3)(1) = c_3$
     Thus:
     $$R_4^0 = \begin{bmatrix} c_3 c_4 & -c_3 s_4 & -s_3 \\ s_4 & c_4 & 0 \\ s_3 c_4 & -s_3 s_4 & c_3 \end{bmatrix}$$
 
+
 ##### 2. Position Vector $p_4$
-From the geometry of the robot, the end-effector position is:
+To find the position of the end-effector tip relative to the base, we trace the path from the base origin $O_0$ to the end-effector origin $O_4$, adding up the vector displacement of each link step-by-step:
+1.  **First Step (along $z_0$)**: We slide along the first joint axis $z_0$ by a variable distance $d_1$. This vector is **$d_1 z_0$**.
+2.  **Second Step (along $z_1$)**: From there, we slide along the second joint axis $z_1$ (which points along the horizontal guide rail) by a variable distance $d_2$. This vector is **$d_2 z_1$**.
+3.  **Third Step (along $x_4$)**: Finally, from the collar, we trace the remaining link lengths. Since $a_1=0, a_2=0, a_3=0$, the only physical link length is the final link 4. This link lies along the final $x_4$ axis and has length $a_4$. This vector is **$a_4 x_4$**.
+
+Adding these steps together gives the position equation:
 $$p_4 = d_1 z_0 + d_2 z_1 + a_4 x_4$$
-Let's express each unit vector in frame 0:
-*   $z_0 = \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix}$ (standard vertical unit vector $\hat{k}$)
-*   $z_1$ is the third column of $R_1^0$:
+
+To compute the final coordinate coordinates mathematically, we must express all three unit vectors ($z_0, z_1, x_4$) in the base coordinate system (Frame 0):
+*   $z_0$ is already in Frame 0:
+    $$z_0^0 = \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix}$$
+*   $z_1$ is the third column of the rotation matrix $R_1^0$:
     $$z_1^0 = R_1^0 \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & -1 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix} = \begin{bmatrix} 0 \\ -1 \\ 0 \end{bmatrix} = -\hat{j}$$
 *   $x_4$ is the first column of $R_4^0$:
     $$x_4^0 = \begin{bmatrix} c_3 c_4 \\ s_4 \\ s_3 c_4 \end{bmatrix}$$
@@ -259,10 +288,23 @@ Below is the scan of the official handwritten solution for Problems 1 and 2 of t
 #### a) Workspace Volume Sketch (for $\vartheta_4 = 0$)
 When $\vartheta_4 = 0$, the position simplifies to:
 $$p_4 = \begin{bmatrix} a_4 \cos\vartheta_3 \\ -d_2 \\ d_1 + a_4 \sin\vartheta_3 \end{bmatrix}$$
-Let's analyze the limits and the shapes they form:
-*   $\vartheta_3 \in [0, 2\pi]$: With $x = a_4\cos\vartheta_3$ and $z = d_1 + a_4\sin\vartheta_3$, for a fixed $d_1$, this forms a circle of radius $a_4$ centered at $(0, d_1)$ in the $xz$-plane.
-*   $d_{1,\min} \le d_1 \le d_{1,\max}$: Sweeping $d_1$ translates this circle vertically along the $z$-axis. The union of these translated circles in the $xz$-plane forms a **stadium shape** (a rectangle of width $2a_4$ and height $d_{1,\max}-d_{1,\min}$ with two semicircular caps of radius $a_4$ at the top and bottom).
-*   $d_{2,\min} \le d_2 \le d_{2,\max}$: Translates the stadium shape horizontally along the $y$-axis from $-d_{2,\max}$ to $-d_{2,\min}$.
+Let's determine the shape step-by-step by varying one joint parameter at a time while holding the others fixed:
+
+1.  **Step 1: Vary $\vartheta_3$ (revolute joint) with $d_1$ and $d_2$ fixed**
+    *   With $d_1$ and $d_2$ constant, the position coordinates are:
+        $$p_x = a_4 \cos\vartheta_3, \quad p_y = -d_2 \text{ (constant)}, \quad p_z = d_1 + a_4 \sin\vartheta_3$$
+    *   In the $xz$-plane, these equations represent a circle. We can verify this mathematically by rewriting:
+        $$(p_x)^2 + (p_z - d_1)^2 = (a_4 \cos\vartheta_3)^2 + (a_4 \sin\vartheta_3)^2 = a_4^2(\cos^2\vartheta_3 + \sin^2\vartheta_3) = a_4^2$$
+        which is a **circle of radius $a_4$** centered at $(0, d_1)$ in the $xz$-plane.
+
+2.  **Step 2: Vary $d_1$ (prismatic joint) between its limits $[d_{1,\min}, d_{1,\max}]$**
+    *   As the joint slides, the center of our circle $(0, d_1)$ translates along the $z$-axis from $d_{1,\min}$ to $d_{1,\max}$.
+    *   The union of all these translated circles forms a **stadium shape** (or "race track" / "capsule" shape) in the $xz$-plane. 
+    *   This stadium has a flat rectangular middle section of width $2a_4$ and length $d_{1,\max} - d_{1,\min}$, capped by two semicircles of radius $a_4$ at the ends.
+
+3.  **Step 3: Vary $d_2$ (prismatic joint) between its limits $[d_{2,\min}, d_{2,\max}]$**
+    *   Since $p_y = -d_2$, varying $d_2$ translates (extrudes) this entire 2D stadium shape along the $y$-axis (which in the official solution diagram is the vertical axis pointing downwards).
+    *   Extruding a stadium shape along a perpendicular axis yields a **stadium-profile prism** (or a flat-sided cylinder).
 
 This yields a stadium-shaped prism extruded along the $y$-axis:
 
