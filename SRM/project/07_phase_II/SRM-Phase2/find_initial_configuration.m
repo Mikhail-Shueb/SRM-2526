@@ -1,0 +1,52 @@
+% Discover a q_0 where the tooltip starts at m0 and the tool passes through the trocar with the flange above it.
+
+clear; clc;
+
+projectPath = fileparts(pwd);
+workspacePath = fileparts(projectPath);
+addpath(fullfile(projectPath, 'generated'));
+addpath(fullfile(workspacePath, 'toolbox'));
+addpath(fullfile(projectPath, '03_inverse_kinematics'));
+
+c_r = [-0.5; 0.0; 0.4];
+m0 = [-0.5; 0.0; 0.3];
+L = 0.15;
+
+% Tool direction from the trocar down to the first target
+dir_down = (m0 - c_r) / norm(m0 - c_r); % expected here: [0; 0; -1]
+
+% The flange sits one tool length above the tooltip
+p_d = m0 - L * dir_down; % [-0.5; 0.0; 0.45]
+
+% Rotation chosen so the flange z-axis follows the tool direction
+R_d = [1 0 0;
+       0 -1 0;
+       0 0 -1];
+
+psi = 0; % elbow parameter for the redundant IK solution
+
+% Solve with the analytical IK from Phase I
+q = inverse_kinematics(R_d, p_d, psi);
+
+% Check the flange, tool direction, and final tooltip position
+T_e = kuka_direct_kinematics(q);
+p_e_val = T_e(1:3, 4);
+z_e_val = T_e(1:3, 3);
+p_tool_val = p_e_val + L * z_e_val;
+
+disp('Verification of Kinematics:');
+disp(['Desired p_e: ', mat2str(p_d')]);
+disp(['Actual p_e:  ', mat2str(p_e_val', 4)]);
+disp(['Desired z_e: ', mat2str(dir_down')]);
+disp(['Actual z_e:  ', mat2str(z_e_val', 4)]);
+disp(['Desired tooltip: ', mat2str(m0')]);
+disp(['Actual tooltip:  ', mat2str(p_tool_val', 4)]);
+
+if p_e_val(3) > c_r(3)
+    disp('SUCCESS: Flange is ABOVE the trocar.');
+else
+    disp('FAILURE: Flange is below the trocar.');
+end
+
+disp('Perfect Initial Joint Configuration (q_0):');
+disp(mat2str(q, 5));

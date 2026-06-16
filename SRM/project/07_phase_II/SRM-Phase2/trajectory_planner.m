@@ -1,0 +1,50 @@
+function [p_d, v_d] = trajectory_planner(t)
+    assert(isa(t, 'double'));
+    assert(all(size(t) == [1, 1]));
+    
+    p_d = zeros(3, 1);
+    v_d = zeros(3, 1);
+    
+    % Reachable targets 
+    m0 = [-0.50;  0.00; 0.30];
+    m1 = [-0.50;  0.08; 0.28];
+    m2 = [-0.52;  0.04; 0.27];
+    m3 = [-0.46; -0.04; 0.32];
+    m4 = [-0.50; -0.08; 0.28];
+    m5 = [-0.55;  0.00; 0.30];
+    
+    T_seg = 5.0; % seconds per segment
+    
+    if t < T_seg
+        p_start = m0; p_end = m1;
+        tau = t;
+    elseif t < 2*T_seg
+        p_start = m1; p_end = m2;
+        tau = t - T_seg;
+    elseif t < 3*T_seg
+        p_start = m2; p_end = m3;
+        tau = t - 2*T_seg;
+    elseif t < 4*T_seg
+        p_start = m3; p_end = m4;
+        tau = t - 3*T_seg;
+    elseif t < 5*T_seg
+        p_start = m4; p_end = m5;
+        tau = t - 4*T_seg;
+    else
+        p_start = m5; p_end = m5;
+        tau = T_seg;
+    end
+    
+    % Cubic blend from one target to the next.
+    if tau <= 0
+        s = 0; s_dot = 0;
+    elseif tau >= T_seg
+        s = 1; s_dot = 0;
+    else
+        s = 3*(tau/T_seg)^2 - 2*(tau/T_seg)^3;
+        s_dot = (6*tau/(T_seg^2)) - (6*tau^2/(T_seg^3));
+    end
+    
+    p_d = p_start + (p_end - p_start) * s;
+    v_d = (p_end - p_start) * s_dot;
+end

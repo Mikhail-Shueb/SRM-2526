@@ -1,0 +1,307 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+
+\setlength{\headheight}{13.6pt}
+\addtolength{\topmargin}{-1.6pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Surgical RCM Manipulator Project}
+\lhead{Robotic Systems in Manipulation}
+\rfoot{Page \thepage}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Robotic Systems in Manipulation - Kinematics \& Surgical RCM Simulation},
+    pdfpagemode=FullScreen,
+}
+
+\title{Robotic Systems in Manipulation\\Phase I \& II: Kinematics and Surgical RCM Control of the KUKA LBR MED}
+\author{Rodrigo Sales Freire dos Santos (ist1119658) \\ Mikhail Mohamed Shueb (ist1104014)}
+\date{May 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report presents the kinematic modeling, control, and simulation of the 7-DOF KUKA LBR MED robot for a minimally invasive surgical procedure. Using the Denavit-Hartenberg (D-H) convention, the robot's kinematics were derived symbolically and validated. An analytical inverse kinematics (IK) solver was developed based on joint decoupling and elbow parameterization. A Closed-Loop Inverse Kinematics (CLIK) controller was then implemented using a damped pseudoinverse and null-space projection for redundancy resolution. Finally, the controller was extended to enforce a Remote Center of Motion (RCM) constraint at a surgical trocar, allowing a 15~cm needle tool to safely enter the patient and track multi-point trajectories inside the body. The simulation results confirm sub-millimeter trocar constraint precision and accurate trajectory tracking.
+\end{abstract}
+
+\section{Introduction}
+Minimally invasive surgery (MIS) relies on robotic manipulators to perform precise operations inside the patient's body through small incisions called trocars. A fundamental control requirement in these procedures is the Remote Center of Motion (RCM), which restricts the tool shaft's lateral motion at the incision point to prevent tissue damage. 
+This project implements the modeling and control of a 7-DOF KUKA LBR MED manipulator, establishing the forward and inverse kinematics, deriving its geometric Jacobian, and applying a Closed-Loop Inverse Kinematics (CLIK) controller. The controller is subsequently augmented to enforce a strict RCM constraint, driving a $15\text{ cm}$ biopsy needle through a fixed trocar to track pre-planned internal targets.
+
+\section{Kinematic Model (D-H Convention)}
+The KUKA LBR MED is a 7 degrees of freedom (DOF) serial redundant manipulator with revolute joints. The reference frames were assigned using the standard Denavit-Hartenberg (D-H) convention, where each joint axis $Z_i$ corresponds to the rotation axis of joint $i+1$. The $X_i$ axes were aligned with the common normals between consecutive $Z$ axes. To simplify the kinematics, the origins of Frame 0 (base) and Frame 1 were placed at the same physical point, setting the link offset $d_1 = 0$.
+
+The dimensions of the robot were obtained from the datasheet of the \textbf{KUKA LBR iiwa 7 R800} model, resulting in link lengths: $d_3 = 0.400\text{ m}$, $d_5 = 0.400\text{ m}$, and $d_7 = 0.126\text{ m}$. The resulting D-H parameters are presented in Table~\ref{tab:dh_parameters}.
+
+\begin{table}[H]
+\centering
+\caption{Denavit-Hartenberg parameters for KUKA LBR MED.}
+\label{tab:dh_parameters}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Joint $i$ & $d_i$ (m) & $\theta_i$ & $a_i$ (m) & $\alpha_i$ (rad) & Offset \\ \midrule
+1         & 0         & $q_1$      & 0         & $+\pi/2$         & 0      \\
+2         & 0         & $q_2$      & 0         & $-\pi/2$         & 0      \\
+3         & 0.400     & $q_3$      & 0         & $-\pi/2$         & 0      \\
+4         & 0         & $q_4$      & 0         & $+\pi/2$         & 0      \\
+5         & 0.400     & $q_5$      & 0         & $+\pi/2$         & 0      \\
+6         & 0         & $q_6$      & 0         & $-\pi/2$         & 0      \\
+7         & 0.126     & $q_7$      & 0         & 0                & 0      \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\section{Direct Kinematics}
+Using the D-H parameters, the forward transformation matrix $T_0^7$ was symbolically computed in MATLAB as:
+\begin{equation}
+T_0^7(q) = A_1^2(q_1) \cdot A_2^3(q_2) \cdots A_6^7(q_7)
+\end{equation}
+The analytical expressions were validated by comparing computed end-effector positions ($p_{comp}$) with geometric expectations ($p_{exp}$) for three known configurations:
+\begin{enumerate}
+    \item \textbf{Home Position}: All joints set to zero ($q = 0$).
+    \item \textbf{Shoulder Bend}: $q = [0, 1.57, 0, 0, 0, 0, 0]\text{ rad}$.
+    \item \textbf{L-Shape Bend}: $q = [0, 0, 0, -1.57, 0, 0, 0]\text{ rad}$.
+\end{enumerate}
+
+The results of the validation are shown in Table~\ref{tab:dk_validation}. The numerical errors are exactly zero, confirming that the D-H table and joint coordinate frames were correctly assigned.
+
+\begin{table}[H]
+\centering
+\caption{Validation of Direct Kinematics.}
+\label{tab:dk_validation}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+Configuration & Joint Angles $q$ (rad) & Expected Position $p_{exp}$ (m) & Computed Position $p_{comp}$ (m) & Error (mm) \\ \midrule
+Home          & $[0, 0, 0, 0, 0, 0, 0]$ & $[0; 0; 0.926]$ & $[0.000; 0.000; 0.926]$ & 0.00 \\
+Shoulder Bend & $[0, 1.57, 0, 0, 0, 0, 0]$ & $[-0.926; 0; 0]$ & $[-0.926; 0.000; 0.000]$ & 0.00 \\
+L-Shape Bend  & $[0, 0, 0, -1.57, 0, 0, 0]$ & $[-0.526; 0; 0.400]$ & $[-0.526; 0.000; 0.400]$ & 0.00 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\section{Analytical Inverse Kinematics}
+To resolve the inverse kinematics analytically for a 7-DOF redundant robot, the elbow angle $q_4$ was chosen as a parameter. By setting $q_4$ to a desired angle, the position of the wrist center $p_w$ is used to solve for joints 1--3 geometrically. The wrist orientation (joints 5--7) is then computed analytically using a Z-Y-Z Euler angle decomposition. Joint limits and mathematical domain boundaries were strictly enforced by clamping the cosine terms to $[-1, 1]$ before performing inverse trigonometric operations.
+
+Validation was conducted using a round-trip test: joint configurations ($q_{orig}$) were mapped to Cartesian targets via Direct Kinematics, which were then solved by the IK algorithm ($q_{inv}$). The resulting positions matched the original configurations with numeric precision ($< 1.0\times 10^{-12}\text{ mm}$), confirming the mathematical correctness of the closed-form solver.
+
+\section{Geometric Jacobian and Singularity Analysis}
+The $6 \times 7$ Geometric Jacobian matrix ($J$) was derived symbolically. The columns were formulated as:
+\begin{equation}
+J_i = \begin{bmatrix} z_{i-1} \times (p_e - p_{i-1}) \\ z_{i-1} \end{bmatrix}
+\end{equation}
+where $z_{i-1}$ is the axis of rotation of joint $i$ and $p_{i-1}$ is the origin of frame $i-1$.
+
+\subsection{Numerical Validation}
+The Jacobian was validated by comparing the end-effector velocity computed analytically ($v = J \dot{q}$) with a first-order central-difference numerical derivative ($\Delta p / \Delta t$) along a high-frequency multi-joint sine-wave trajectory. The maximum discrepancies were $7.5 \times 10^{-5}\text{ m/s}$ for linear velocity and $1.2 \times 10^{-3}\text{ rad/s}$ for angular velocity, confirming consistency.
+
+\subsection{Singularity Rank Analysis}
+The rank of the Jacobian was evaluated in different joint configurations to analyze singularities (Table~\ref{tab:jacobian_singularities}).
+
+\begin{table}[H]
+\centering
+\caption{Singularity Rank Analysis.}
+\label{tab:jacobian_singularities}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Configuration & Joint Condition & Jacobian Rank & Consequence \\ \midrule
+Generic Pose  & Bounded random joints & 6 & Full task-space mobility \\
+Shoulder      & $q_2 = 0$             & 6 & Loses redundancy; retains full task mobility \\
+Wrist         & $q_6 = 0$             & 6 & Loses redundancy; retains full task mobility \\
+Elbow         & $q_4 = 0$             & 5 & \textbf{Loses a Task-Space DOF (cannot stretch)} \\ \bottomrule
+\end{tabular}
+\end{table}
+
+The elbow-stretched configuration ($q_4 = 0$) represents a true boundary singularity where the robot loses a Cartesian degree of freedom, whereas the shoulder and wrist configurations only consume the internal redundancy (null-space mobility) of the manipulator.
+
+\section{Closed-Loop Inverse Kinematics (CLIK)}
+A Closed-Loop Inverse Kinematics (CLIK) controller was implemented in Simulink. The controller continuously updates the joint velocities $\dot{q}$ using the task-space position error $e_p$ and orientation error $e_o$:
+\begin{equation}
+\dot{q} = J^{\dagger} (v_d + K_p e_p) + (I - J^{\dagger} J) \dot{q}_0
+\end{equation}
+where $J^{\dagger} = J^T(J J^T + \lambda^2 I)^{-1}$ is the damped pseudoinverse ($\lambda = 0.001$), $K_p$ is the proportional gain, and $\dot{q}_0 = -K_0 (q - q_{rest})$ is the null-space velocity driving the joint configuration towards a comfortable posture $q_{rest} = 0$.
+
+\subsection{Method Comparison}
+The damped pseudoinverse was compared against the Jacobian Transpose method. The pseudoinverse converged significantly faster (1.1 s vs. 3.2 s) and with lower steady-state error, as shown in Table~\ref{tab:clik_comparison}.
+
+\begin{table}[H]
+\centering
+\caption{Comparison of CLIK Methods.}
+\label{tab:clik_comparison}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Metric & Damped Pseudoinverse & Jacobian Transpose \\ \midrule
+Final Position Error (mm) & $1.58 \times 10^{-4}$ & $8.45 \times 10^{-3}$ \\
+Final Orientation Error (rad) & $2.06 \times 10^{-8}$ & $1.12 \times 10^{-6}$ \\
+Settling Time (s) & 1.10 & 3.25 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Null-Space Stabilization}
+The effect of null-space stabilization was verified by running simulations with $K_0 = 0.15$ (enabled) and $K_0 = 0$ (disabled). With the stabilization active, the joints converged smoothly to a center configuration without altering the Cartesian end-effector trajectory, preventing joints from drifting toward mechanical limits.
+
+\section{Phase II: Surgical RCM Trajectory Tracking}
+In Phase II, the simulator was extended to model a surgical biopsy procedure. The tool is a $15\text{ cm}$ biopsy needle ($L = 0.15\text{ m}$) attached to the end-effector. The control objective is to track a multi-point target path ($m_i$) inside the patient while keeping the tool shaft strictly centered inside a physical trocar $c_r = [-0.5; 0.0; 0.4]$.
+
+\subsection{Formulation of the RCM Constraint}
+The trocar position $c_r$ must lie on the line segment of the tool shaft between the flange position $p_e$ and the tooltip $p_{tool} = p_e + L z_e$. The projection of $c_r$ along the tool axis is:
+\begin{equation}
+\lambda = (c_r - p_e)^T z_e
+\end{equation}
+The closest point on the shaft to the trocar is $p_c = p_e + \lambda z_e$, and the geometric constraint error is $e_{rcm} = c_r - p_c$. The constraint Jacobian mapping joint velocities to this error is:
+\begin{equation}
+J_{rcm} = (I - z_e z_e^T) (J_v - \lambda [z_e]_{\times} J_w)
+\end{equation}
+where $[z_e]_{\times}$ is the skew-symmetric matrix of $z_e$.
+
+\subsection{Task-Priority Controller}
+Using a task-priority framework, the RCM constraint is set as the primary (hard) task, and the tooltip tracking is set as the secondary task:
+\begin{equation}
+\dot{q}_1 = J_{rcm}^{\dagger} K_{rcm} e_{rcm}
+\end{equation}
+\begin{equation}
+\dot{q}_2 = (I - J_{rcm}^{\dagger} J_{rcm}) J_{tool\_N}^{\dagger} (v_d + K_{tool} e_{tool} - J_{tool} \dot{q}_1)
+\end{equation}
+where $J_{tool} = J_v - L [z_e]_{\times} J_w$.
+
+\subsection{Simulation Verification}
+To guarantee that the robot is physically capable of reaching the targets from above (flange strictly above the trocar, $z_e$ pointing downward), the targets and trocar were placed within the workspace: $c_r = [-0.5; 0.0; 0.4]$, $m_0 = [-0.50; 0.00; 0.30]$, $m_1 = [-0.50; 0.08; 0.28]$, $m_2 = [-0.52; 0.04; 0.27]$, $m_3 = [-0.46; -0.04; 0.32]$, $m_4 = [-0.50; -0.08; 0.28]$, and $m_5 = [-0.55; 0.00; 0.30]$.
+The analytical IK solver computed the perfect initial configuration $q_0 = [0; 0.4085; 3.1416; 0.6128; -3.1416; 2.1203; 3.1416]\text{ rad}$, which places the robot flange at $p_e = [-0.5; 0.0; 0.45]$ (above the trocar) and points the tool straight down ($z_e = [0; 0; -1]$).
+
+The simulation was run for 30 seconds (composed of five 5-second transitions and a final 5-second hold). The resulting tooltip trajectory, including both the red dashed planned path (shifted visually by $+3\text{ mm}$ along the Y-axis to run side-by-side during periods of overlap) and the blue solid executed path, is shown in Fig.~\ref{fig:trajectory_3d}. It demonstrates that the needle passes precisely through the trocar throughout the entire motion. Figure~\ref{fig:rcm_error} shows the trocar constraint error, which stays below $0.11\text{ mm}$ during all transitions.
+
+The error margin at each target point and the average error in between each point (transition intervals) are presented in Table~\ref{tab:target_errors} and Table~\ref{tab:transition_errors}, respectively. The tracking results indicate sub-millimeter precision for the primary trocar RCM constraint, with a maximum transient RCM error of $0.1052\text{ mm}$ (during the first transition) and a steady-state error of $0.0000\text{ mm}$ at $t = 30.0\text{ s}$. The tooltip tracking error remains exceptionally small at all target points (under $0.15\text{ mm}$ at all static targets, and settling to $0.0000\text{ mm}$ during steady-state hold), with a maximum transient tracking error of $0.1858\text{ mm}$ during the $m_0 \rightarrow m_1$ transition.
+
+\begin{table}[H]
+\centering
+\caption{Error margin at each target point.}
+\label{tab:target_errors}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Target Point & Time (s) & Trocar RCM Error (mm) & Tooltip Tracking Error (mm) \\ \midrule
+$m_0$ (Start) & 0  & 0.007143 & 0.011697 \\
+$m_1$         & 5  & 0.008550 & 0.065520 \\
+$m_2$         & 10 & 0.000953 & 0.129795 \\
+$m_3$         & 15 & 0.003167 & 0.049255 \\
+$m_4$         & 20 & 0.022055 & 0.141048 \\
+$m_5$ (Start) & 25 & 0.006190 & 0.036866 \\
+$m_5$ (End)   & 30 & 0.000000 & 0.000000 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Average and maximum tracking errors in between target points (transitions).}
+\label{tab:transition_errors}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Transition & Interval (s) & Avg RCM Err (mm) & Max RCM Err (mm) & Avg Tooltip Err (mm) & Max Tooltip Err (mm) \\ \midrule
+$m_0 \rightarrow m_1$ & $[0, 5]$   & 0.009865 & 0.105213 & 0.020335 & 0.185847 \\
+$m_1 \rightarrow m_2$ & $[5, 10]$  & 0.003946 & 0.010926 & 0.028859 & 0.129795 \\
+$m_2 \rightarrow m_3$ & $[10, 15]$ & 0.022614 & 0.098094 & 0.038649 & 0.129795 \\
+$m_3 \rightarrow m_4$ & $[15, 20]$ & 0.012369 & 0.049387 & 0.034262 & 0.141048 \\
+$m_4 \rightarrow m_5$ & $[20, 25]$ & 0.013092 & 0.035113 & 0.034027 & 0.141048 \\
+$m_5$ Hold            & $[25, 30]$ & 0.001101 & 0.006190 & 0.007714 & 0.036866 \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/step6_rcm_trajectory.png}
+\caption{3D simulation of the tooltip trajectory and needle shaft passing through the trocar from above.}
+\label{fig:trajectory_3d}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/step6_rcm_error.png}
+\caption{Trocar constraint error magnitude over time.}
+\label{fig:rcm_error}
+\end{figure}
+
+\section{Comparative Analysis: CLIK vs. Analytical Inverse Kinematics}
+To evaluate the strengths and weaknesses of the Closed-Loop Inverse Kinematics (CLIK) controller against the analytical Inverse Kinematics (IK) solver, we compare their performance across three critical criteria: path planning, path tracing (RCM enforcement), and error characteristics.
+
+\subsection{Path Planning and Computational Complexity}
+\begin{itemize}
+    \item \textbf{Analytical IK:} Provides a direct, closed-form mapping from Cartesian coordinates to joint angles ($q$) at a specific time step. While mathematically instantaneous for a single target point, continuous path planning requires evaluating these complex trigonometric equations at thousands of intermediate points. If the elbow parameter ($\psi$) is not chosen carefully, joints can experience large discontinuities (flips) between consecutive steps.
+    \item \textbf{CLIK:} Resolves kinematics at the velocity level ($\dot{q} = J^{\dagger} v$) by integrating joint velocities over time. This naturally produces smooth, continuous joint trajectories. The path planning is embedded directly within the control loop, eliminating the need for pre-calculating the entire joint-space path.
+\end{itemize}
+
+\subsection{Path Tracing and RCM Constraint Enforcement}
+\begin{itemize}
+    \item \textbf{Analytical IK (Open-Loop):} Enforces the RCM constraint by geometrically defining the desired flange position and orientation relative to the trocar. Because it lacks feedback, it cannot correct for unexpected joint drifts, link elasticity, or external forces. If a target is slightly out of reach, the equations yield complex numbers, causing the solver to fail. The trajectory tracked under analytical IK in ideal conditions is shown in Fig.~\ref{fig:ik_trajectory_3d}.
+    \item \textbf{CLIK (Closed-Loop Feedback):} Treats the RCM constraint as a prioritized task. The controller continuously measures the physical distance from the trocar to the needle shaft and corrects any deviations. This feedback mechanism makes the system extremely robust to initial alignment errors, sensor noise, or physical disturbances.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/ik_trajectory_3d.png}
+\caption{3D simulation of the tooltip trajectory and needle shaft passing through the trocar under open-loop Analytical IK control (ideal condition).}
+\label{fig:ik_trajectory_3d}
+\end{figure}
+
+\subsection{Error Degree and Frequency}
+\begin{itemize}
+    \item \textbf{Error Degree:} Under ideal, noise-free simulation conditions, analytical IK yields zero theoretical tracking and RCM error (assuming perfect joint execution), as shown by the RCM error over time in Fig.~\ref{fig:ik_rcm_error}. In contrast, CLIK introduces tiny, sub-millimeter transient tracking errors ($<0.19\text{ mm}$ for tooltip and $<0.11\text{ mm}$ for trocar) during rapid movements due to controller gain limits and pseudoinverse damping.
+    \item \textbf{Error Frequency:} Analytical IK is susceptible to catastrophic, high-frequency errors. If the path passes close to a singularity (e.g. fully stretched elbow $q_4 = 0$), joint velocities spike toward infinity. CLIK resolves this smoothly: the damping factor ($\lambda_{damp} = 0.01$) acts as a soft brake, allowing the robot to pass near singularities by slightly degrading tracking accuracy transiently rather than failing.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/ik_rcm_error.png}
+\caption{Trocar constraint error magnitude over time under analytical IK control (flat zero under ideal conditions).}
+\label{fig:ik_rcm_error}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of CLIK and Analytical IK performance.}
+\label{tab:clik_vs_analytical}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Metric & Closed-Loop Inverse Kinematics (CLIK) & Analytical Inverse Kinematics (IK) \\ \midrule
+\textbf{Mathematical Basis} & Velocity-level Integration ($\dot{q} = J^{\dagger} v$) & Closed-form Geometric Equations \\
+\textbf{RCM Enforcement} & Active feedback task-priority control & Pre-calculated geometric flange pose \\
+\textbf{Robustness} & High (closed-loop rejects disturbances) & Low (open-loop, sensitive to drift) \\
+\textbf{Singularity Handling} & Graceful degradation (damped pseudoinverse) & Solver failure (imaginary joint angles) \\
+\textbf{Joint Trajectory} & Naturally smooth and continuous & Susceptible to joint-flip discontinuities \\
+\textbf{Tracking Accuracy} & Sub-millimeter transient errors ($<0.19\text{ mm}$) & Mathematically exact (under ideal execution) \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/clik_vs_ik_comparison.png}
+\caption{Comparison of joint trajectory smoothness: CLIK joint angles remain perfectly smooth and continuous (due to velocity-level integration), whereas open-loop analytical IK trajectories are susceptible to joint-flip discontinuities and rapid changes.}
+\label{fig:clik_vs_ik_comparison}
+\end{figure}
+
+\section{Conclusions}
+This work successfully modeled, verified, and simulated the KUKA LBR iiwa 7 R800 serial manipulator for surgical applications. The primary conclusions are:
+\begin{enumerate}
+    \item The Denavit-Hartenberg model and Direct Kinematics equations are mathematically exact, exhibiting zero numerical error.
+    \item The analytical IK solver provides an instantaneous, closed-form solution for reachable targets, but is susceptible to joint singularities.
+    \item Singularity analysis revealed that the elbow-stretched configuration ($q_4 = 0$) results in a true loss of a task-space degree of freedom, whereas the shoulder/wrist configurations only restrict internal redundancy.
+    \item The Closed-Loop Inverse Kinematics (CLIK) controller using a damped pseudoinverse and null-space stabilization is highly robust, maintaining path accuracy and joint stability near singularities.
+    \item Enforcing the Remote Center of Motion (RCM) via task-priority null-space projection dynamically ensures that the needle shaft remains centered inside the trocar incision point with sub-millimeter precision, satisfying the safety constraints of minimally invasive procedures.
+\end{enumerate}
+
+\end{document}
